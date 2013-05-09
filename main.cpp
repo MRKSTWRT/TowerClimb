@@ -67,7 +67,7 @@ int main(void)
 
   //-------Game Init
   //--Load fonts
-  arial18 = al_load_font("arial.ttf", 16, 0);
+  arial18 = al_load_font("Assets/Fonts/arial.ttf", 16, 0);
   
 
   al_register_event_source(event_queue, al_get_keyboard_event_source());
@@ -249,11 +249,11 @@ void InitPlayer(Player &p)
 
   p.state = p.WALKING;
 
-  p.sheet[0] = al_load_bitmap("frank.png");
+  p.sheet[0] = al_load_bitmap("Assets/Images/frank.png");
   p.frames[0] = 4;
-  p.sheet[1] = al_load_bitmap("frank2.png");
+  p.sheet[1] = al_load_bitmap("Assets/Images/frank2.png");
   p.frames[1] = 16;
-  p.sheet[2] = al_load_bitmap("frank.png");
+  p.sheet[2] = al_load_bitmap("Assets/Images/frank.png");
   p.frames[2] = 1;
 
   p.current_frame = 0;
