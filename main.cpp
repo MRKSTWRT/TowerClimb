@@ -30,6 +30,8 @@ void DrawPlatforms();
 void RemovePlatform(int id); //"kills" the platform at id in the array
 int PlayerCollidePlatforms(); //Returns the index of the platform being collided with or -1 if no collision.
 
+void NewGame(); //Re-initialises everything for a new game
+
 void Destroy(); //Destroy everything when closing
 
 //Objects
@@ -76,12 +78,6 @@ int main(void)
 
   al_start_timer(timer);
 
-  InitPlayer(player);
-
-  SpawnPlatform(250, 370, 100, 25);
-  SpawnPlatform(100, 370, 100, 25);
-  
-
   while(!done)
   {
     ALLEGRO_EVENT ev;
@@ -122,9 +118,19 @@ void Update()
 {
   if (current_state == GAME)
   {
-    UpdatePlatforms();
-    UpdatePlayer(player);
-      
+    if (new_game)
+      NewGame();
+
+    if (!paused)
+    {
+      UpdatePlatforms();
+      UpdatePlayer(player);
+    }
+
+    if (JustPressed(R))
+    {
+      new_game = true;
+    }
   }
   else if (current_state == MENU)
   {
@@ -189,7 +195,12 @@ void CheckKeys(ALLEGRO_EVENT &ev, bool pressed)
     case ALLEGRO_KEY_X:
       keys[X] = true;
       break;
-
+    case ALLEGRO_KEY_Z:
+      keys[Z] = true;
+      break;
+    case ALLEGRO_KEY_R:
+      keys[R] = true;
+      break;
     }
   }
   else
@@ -211,6 +222,12 @@ void CheckKeys(ALLEGRO_EVENT &ev, bool pressed)
     case ALLEGRO_KEY_X:
       keys[X] = false;
       break;
+    case ALLEGRO_KEY_Z:
+      keys[Z] = false;
+      break;
+    case ALLEGRO_KEY_R:
+      keys[R] = false;
+      break;
     }
   }
 }
@@ -231,8 +248,8 @@ void InitPlayer(Player &p)
 {
   p.x = 100;
   p.y = 100;
-  p.width = 13;
-  p.height = 16;
+  p.width = 16;
+  p.height = 32;
   p.scale_x = 2;
   p.scale_y = 2;
   p.rotation = 0;
@@ -249,12 +266,14 @@ void InitPlayer(Player &p)
 
   p.state = p.WALKING;
 
-  p.sheet[0] = al_load_bitmap("Assets/Images/frank.png");
-  p.frames[0] = 4;
-  p.sheet[1] = al_load_bitmap("Assets/Images/frank2.png");
-  p.frames[1] = 16;
-  p.sheet[2] = al_load_bitmap("Assets/Images/frank.png");
+  p.sheet[0] = al_load_bitmap("Assets/Images/Mario-Stand.png");
+  p.frames[0] = 1;
+  p.sheet[1] = al_load_bitmap("Assets/Images/Mario-Run.png");
+  p.frames[1] = 2;
+  p.sheet[2] = al_load_bitmap("Assets/Images/Mario-Skid.png");
   p.frames[2] = 1;
+  p.sheet[3] = al_load_bitmap("Assets/Images/Mario-Jump.png");
+  p.frames[3] = 1;
 
   p.current_frame = 0;
   p.current_animation = p.STAND;
@@ -271,16 +290,30 @@ void UpdatePlayer(Player &p)
 	  if (keys[LEFT])
     {
       p.facing = p.LEFT;
-      ChangePlayerAnimation(player, p.WALK, false);
+      if (p.speed > 0)
+      {
+        ChangePlayerAnimation(p, p.SKID, false);
+      }
+      else
+      {
+        ChangePlayerAnimation(p, p.RUN, false);
+      }
     }
     else if (keys[RIGHT])
     {
       p.facing = p.RIGHT;
-      ChangePlayerAnimation(player, p.WALK, false);
+      if (p.speed < 0)
+      {
+        ChangePlayerAnimation(p, p.SKID, false);
+      }
+      else
+      {
+        ChangePlayerAnimation(p, p.RUN, false);
+      }
     }
     else
     {
-      ChangePlayerAnimation(player, p.STAND, false);
+      ChangePlayerAnimation(p, p.STAND, false);
     }
 
     if (JustPressed(X))
@@ -294,7 +327,6 @@ void UpdatePlayer(Player &p)
   if (keys[LEFT])
   {
     p.facing = p.LEFT;
-    ChangePlayerAnimation(player, p.WALK, false);
 
     if (p.speed <= 0)
     {
@@ -311,7 +343,6 @@ void UpdatePlayer(Player &p)
   else if (keys[RIGHT])
   {
     p.facing = p.RIGHT;
-    ChangePlayerAnimation(player, p.WALK, false);
 
     if (p.speed >= 0)
     {
@@ -397,6 +428,7 @@ void UpdatePlayer(Player &p)
   
   if (p.state == p.JUMPING && !JustPressed(X))
   {
+    ChangePlayerAnimation(p, p.JUMP, false);
     if (p.y_velocity < p.gravity)
     {
       p.y_velocity += 1;
@@ -417,11 +449,11 @@ void UpdatePlayer(Player &p)
   p.y += p.y_velocity;
   p.x += p.speed;
 
-  if (int plat = PlayerCollidePlatforms() != -1)
+  if (PlayerCollidePlatforms() != -1)
   {
     p.state = p.WALKING;
     p.y_velocity = 0;
-    p.y = platforms[plat].y - (p.height * p.scale_y);
+    p.y = platforms[PlayerCollidePlatforms()].y - (p.height * p.scale_y);
   }
   else
   {
@@ -567,12 +599,23 @@ int PlayerCollidePlatforms()
   return -1;
 }
 
+void NewGame()
+{
+  InitPlayer(player);
+
+  SpawnPlatform(0, 200, 100, 25);
+  SpawnPlatform(100, 250, 100, 25);
+  SpawnPlatform(0, 300, WIDTH, 25);
+
+  new_game = false;
+}
+
 void Destroy()
 {
   int i;
 
   al_destroy_font(arial18);
 
-  for (i = 0; i < 3; ++i)
+  for (i = 0; i < 2; ++i)
     al_destroy_bitmap(player.sheet[i]);
 }

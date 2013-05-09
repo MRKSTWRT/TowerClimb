@@ -17,10 +17,10 @@ bool done = false;
 bool redraw = true;
 
 //Keeps track of the pressed state of each key, true means key is down
-enum KEYS{UP, DOWN, LEFT, RIGHT, X};
-bool keys[5] = {false, false, false, false, false};
-bool old_keys[5] = {false, false, false, false, false};
-int num_keys = 5;
+enum KEYS{UP, DOWN, LEFT, RIGHT, X, Z, R};
+const int num_keys = 7;
+bool keys[num_keys] = {false, false, false, false, false, false, false};
+bool old_keys[num_keys] = {false, false, false, false, false, false, false};
 
 //Keeps track of the state, changing current_state will switch the state.
 enum STATES{GAME, MENU};
@@ -36,4 +36,8 @@ int skips = 0;
 //The allegro_display
 ALLEGRO_DISPLAY *display = NULL;
 
+//Keeps track of if the game is paused or not
+bool paused = false;
 
+//Set this to true to reset everything for a new game
+bool new_game = true;

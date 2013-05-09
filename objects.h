@@ -22,12 +22,12 @@ struct Player
   enum states{WALKING, FALLING, JUMPING};
   int state;
 
-  enum animations{WALK, SHRINK, STAND};
+  enum animations{STAND, RUN, SKID, JUMP};
   enum directions{LEFT, RIGHT};
   
   
-  ALLEGRO_BITMAP *sheet[3];
-  int frames[3];
+  ALLEGRO_BITMAP *sheet[4];
+  int frames[4];
 
   int current_animation;
   int current_frame;
