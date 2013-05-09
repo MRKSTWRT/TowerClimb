@@ -69,7 +69,12 @@ int main(void)
 
   //-------Game Init
   //--Load fonts
-  arial18 = al_load_font("Assets/Fonts/arial.ttf", 16, 0);
+  fonts[0] = al_load_font("Assets/Fonts/arial.ttf", 16, 0);
+  //--Load images
+  images[0] = al_load_bitmap("Assets/Images/Mario-Stand.png");
+  images[1] = al_load_bitmap("Assets/Images/Mario-Run.png");
+  images[2] = al_load_bitmap("Assets/Images/Mario-Skid.png");
+  images[3] = al_load_bitmap("Assets/Images/Mario-Jump.png");
   
 
   al_register_event_source(event_queue, al_get_keyboard_event_source());
@@ -166,7 +171,7 @@ void Draw()
   al_draw_filled_circle(debug_circle[2].x, debug_circle[2].y, 1, al_map_rgb(255,0,0));
   al_draw_filled_circle(debug_circle[3].x, debug_circle[3].y, 1, al_map_rgb(255,0,0));
 
-  al_draw_textf(arial18, al_map_rgb(255,0,0), 2, 2, 0, "%i FPS - Facing: %i - State %i", game_fps, player.facing, player.state);
+  al_draw_textf(fonts[0], al_map_rgb(255,0,0), 2, 2, 0, "%i FPS - Facing: %i - State %i", game_fps, player.facing, player.state);
   al_flip_display();
   al_clear_to_color(al_map_rgb(0,0,0));
 }
@@ -257,22 +262,22 @@ void InitPlayer(Player &p)
 
   p.max_speed = 5;
   p.acceleration = 0.25;
-  p.deceleration = 0.5;
+  p.deceleration = 0.2;
   p.speed = 0;
 
   p.gravity = 8;
   p.y_velocity = p.gravity;
-  p.jump_power = 15;
+  p.jump_power = 18;
 
   p.state = p.WALKING;
 
-  p.sheet[0] = al_load_bitmap("Assets/Images/Mario-Stand.png");
+  p.sheet[0] = images[0];
   p.frames[0] = 1;
-  p.sheet[1] = al_load_bitmap("Assets/Images/Mario-Run.png");
+  p.sheet[1] = images[1];
   p.frames[1] = 2;
-  p.sheet[2] = al_load_bitmap("Assets/Images/Mario-Skid.png");
+  p.sheet[2] = images[2];
   p.frames[2] = 1;
-  p.sheet[3] = al_load_bitmap("Assets/Images/Mario-Jump.png");
+  p.sheet[3] = images[3];
   p.frames[3] = 1;
 
   p.current_frame = 0;
@@ -320,7 +325,9 @@ void UpdatePlayer(Player &p)
     {
       p.state = p.JUMPING;
       p.y_velocity = -p.jump_power;
-      p.speed *= 3;
+      
+      if ((p.facing == p.LEFT && p.speed < 0) || (p.facing == p.RIGHT && p.speed > 0))
+        p.speed *= 3;
     }
   }
 
@@ -614,8 +621,8 @@ void Destroy()
 {
   int i;
 
-  al_destroy_font(arial18);
+  al_destroy_font(fonts[0]);
 
-  for (i = 0; i < 2; ++i)
-    al_destroy_bitmap(player.sheet[i]);
+  for (i = 0; i < 4; ++i)
+    al_destroy_bitmap(images[i]);
 }
