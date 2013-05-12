@@ -466,20 +466,27 @@ void UpdatePlayer(Player &p)
     }
   }
 
+  //Apply forces to player
   p.y += p.y_velocity;
   p.x += p.speed;
 
-  if (PlayerCollidePlatforms() != -1)
+  if (p.x < -(p.width * p.scale_x)) //Wrap player if he goes off the left side
+    p.x = WIDTH;
+
+  if (p.x > WIDTH) // Wrap player if he goes off the right side
+    p.x = -(p.width * p.scale_x);
+
+  if (PlayerCollidePlatforms() != -1) //Check for a collision
   {
-    p.state = p.WALKING;
-    p.y_velocity = 0;
-    p.y = platforms[PlayerCollidePlatforms()].y - (p.height * p.scale_y);
+    p.state = p.WALKING; //Change player state to walking
+    p.y_velocity = 0; //Kill the downward velocity
+    p.y = platforms[PlayerCollidePlatforms()].y - (p.height * p.scale_y); //Make sure the player hasn't sunk into the platform
   }
   else
   {
     if (p.state != p.JUMPING)
     {
-      p.state = p.FALLING;
+      p.state = p.FALLING; //If we're not jumping and we aren't touching the ground then we must be falling
     }
   }
 }
