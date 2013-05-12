@@ -30,12 +30,14 @@ void DrawPlatforms();
 void RemovePlatform(int id); //"kills" the platform at id in the array
 int PlayerCollidePlatforms(); //Returns the index of the platform being collided with or -1 if no collision.
 
-void NewGame(); //Re-initialises everything for a new game
+void NewGame(); //Re-initializes everything for a new game
 
 void Destroy(); //Destroy everything when closing
 
 //Objects
 
+int cur_x;
+int cur_y;
 
 int main(void)
 {
@@ -130,13 +132,13 @@ void Update()
     {
       UpdatePlatforms();
       UpdatePlayer(player);
-
-      if (keys[UP])
-        cam.y -= 1;
-
-      if (keys[DOWN])
-        cam.y += 1;
     }
+
+    cur_x = player.x + cam.x;
+    cur_y = player.y - cam.y;
+
+    if (player.y < WIDTH / 2)
+      cam.y += 1;
 
     if (JustPressed(R))
     {
@@ -177,7 +179,7 @@ void Draw()
   al_set_target_bitmap(al_get_backbuffer(display));
   al_draw_bitmap(cam.screen, 0, 0, 0);
 
-  al_draw_textf(fonts[0], al_map_rgb(255,0,0), 2, 2, 0, "%i FPS - Facing: %i - State %i", game_fps, player.facing, player.state);
+  al_draw_textf(fonts[0], al_map_rgb(255,0,0), 2, 2, 0, "%i FPS - X: %i - Y: %i", game_fps, cur_x, cur_y);
   al_flip_display();
 }
 
@@ -265,14 +267,15 @@ void InitCamera()
 
 void InitPlayer(Player &p)
 {
-  p.x = 100;
-  p.y = 100;
   p.width = 16;
   p.height = 32;
   p.scale_x = 2;
   p.scale_y = 2;
   p.rotation = 0;
   p.facing = p.RIGHT;
+
+  p.x = 10;
+  p.y = (HEIGHT - (p.height * p.scale_y)) - 25;
 
   p.max_speed = 5;
   p.acceleration = 0.25;
@@ -281,7 +284,7 @@ void InitPlayer(Player &p)
 
   p.gravity = 8;
   p.y_velocity = p.gravity;
-  p.jump_power = 18;
+  p.jump_power = 20;
 
   p.state = p.WALKING;
 
@@ -335,7 +338,7 @@ void UpdatePlayer(Player &p)
       ChangePlayerAnimation(p, p.STAND, false);
     }
 
-    if (JustPressed(X))
+    if (JustPressed(UP))
     {
       p.state = p.JUMPING;
       p.y_velocity = -p.jump_power;
@@ -627,9 +630,11 @@ void NewGame()
   InitCamera();
   InitPlayer(player);
 
-  SpawnPlatform(0, 200, 100, 25);
-  SpawnPlatform(100, 250, 100, 25);
-  SpawnPlatform(0, 300, WIDTH, 25);
+  //Spawn the starting platforms
+  SpawnPlatform(0, HEIGHT - 25, WIDTH, 25);
+  SpawnPlatform(0, HEIGHT - 175, 100, 25);
+  SpawnPlatform(125, HEIGHT - 250, 100, 25);
+  SpawnPlatform(250, HEIGHT - 325, 100, 25);
 
   new_game = false;
 }

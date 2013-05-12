@@ -2,8 +2,8 @@
 const int FPS = 60;
 
 //Width and height of the window
-const int WIDTH = 800;
-const int HEIGHT = 400;
+const int WIDTH = 400;
+const int HEIGHT = 600;
 
 //PI Constant
 const float PI = 3.141592653589793;
