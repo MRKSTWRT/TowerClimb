@@ -10,14 +10,14 @@
 #include "objects.h"
 #include "assets.h"
 
-Point debug_circle[4];
-
 //prototypes
 void Update(); //Update the current game state, once every frame
 void Draw(); //Handles all of the drawing on screen, after Update
 void CheckKeys(ALLEGRO_EVENT &ev, bool pressed); //Checks the current up/down state of each key in the keys array
 
 bool JustPressed(int keycode); //Returns true if keycode has just been pressed this frame
+
+void InitCamera();
 
 void InitPlayer(Player &p); //Player constructor, initializes all the starting variables etc.
 void UpdatePlayer(Player &p); //Updates all player logic
@@ -130,6 +130,12 @@ void Update()
     {
       UpdatePlatforms();
       UpdatePlayer(player);
+
+      if (keys[UP])
+        cam.y -= 1;
+
+      if (keys[DOWN])
+        cam.y += 1;
     }
 
     if (JustPressed(R))
@@ -162,18 +168,17 @@ void Update()
 
 void Draw()
 { 
-
+  al_set_target_bitmap(cam.screen);
+  al_clear_to_color(al_map_rgb(0,0,0));
+  
   DrawPlatforms();
   DrawPlayer(player);
 
-  al_draw_filled_circle(debug_circle[0].x, debug_circle[0].y, 1, al_map_rgb(255,0,0));
-  al_draw_filled_circle(debug_circle[1].x, debug_circle[1].y, 1, al_map_rgb(255,0,0));
-  al_draw_filled_circle(debug_circle[2].x, debug_circle[2].y, 1, al_map_rgb(255,0,0));
-  al_draw_filled_circle(debug_circle[3].x, debug_circle[3].y, 1, al_map_rgb(255,0,0));
+  al_set_target_bitmap(al_get_backbuffer(display));
+  al_draw_bitmap(cam.screen, 0, 0, 0);
 
   al_draw_textf(fonts[0], al_map_rgb(255,0,0), 2, 2, 0, "%i FPS - Facing: %i - State %i", game_fps, player.facing, player.state);
   al_flip_display();
-  al_clear_to_color(al_map_rgb(0,0,0));
 }
 
 void CheckKeys(ALLEGRO_EVENT &ev, bool pressed)
@@ -247,6 +252,15 @@ bool JustPressed(int i)
   {
     return false;
   }
+}
+
+void InitCamera()
+{
+  cam.x= 0;
+  cam.y = 0;
+  cam.width = WIDTH;
+  cam.height = HEIGHT;
+  cam.screen = al_create_bitmap(cam.width, cam.height);
 }
 
 void InitPlayer(Player &p)
@@ -326,8 +340,7 @@ void UpdatePlayer(Player &p)
       p.state = p.JUMPING;
       p.y_velocity = -p.jump_power;
       
-      if ((p.facing == p.LEFT && p.speed < 0) || (p.facing == p.RIGHT && p.speed > 0))
-        p.speed *= 3;
+      
     }
   }
 
@@ -496,9 +509,9 @@ void DrawPlayer(Player &p)
     al_draw_bitmap_region(p.sheet[p.current_animation], p.current_frame * p.width, 0, p.width, p.height, 0, 0, ALLEGRO_FLIP_HORIZONTAL);
   }
 
-  al_set_target_bitmap(al_get_backbuffer(display));
+  al_set_target_bitmap(cam.screen);
   
-  al_draw_scaled_bitmap(p.sprite, 0, 0, p.width, p.height, p.x, p.y, p.width * p.scale_x, p.height * p.scale_y, 0);
+  al_draw_scaled_bitmap(p.sprite, 0, 0, p.width, p.height, p.x - cam.x, p.y + cam.y, p.width * p.scale_x, p.height * p.scale_y, 0);
 }
 
 void ChangePlayerAnimation(Player &p, int animation, bool hard)
@@ -537,12 +550,13 @@ void UpdatePlatforms()
 
 void DrawPlatforms()
 {
+  al_set_target_bitmap(cam.screen);
+
   for (int i = 0; i < max_platforms; ++i)
   {
     if (platforms[i].alive)
     {
-      al_set_target_bitmap(al_get_backbuffer(display));
-      al_draw_filled_rectangle(platforms[i].x, platforms[i].y, platforms[i].x + platforms[i].width, platforms[i].y + platforms[i].height, al_map_rgb(255,255,255));
+      al_draw_filled_rectangle(platforms[i].x - cam.x, platforms[i].y + cam.y, platforms[i].x + platforms[i].width - cam.x, platforms[i].y + platforms[i].height + cam.y, al_map_rgb(255,255,255));
     }
   } 
 }
@@ -571,11 +585,6 @@ int PlayerCollidePlatforms()
 
   player_top_left.x = player.x;
   player_top_right.x = player.x + (player.width * player.scale_y);
-
-  debug_circle[0] = player_bottom_left;
-  debug_circle[1] = player_bottom_right;
-  debug_circle[2] = player_top_right;
-  debug_circle[3] = player_top_left;
 
   for (int i = 0; i < num_platforms; ++i)
   {
@@ -608,6 +617,7 @@ int PlayerCollidePlatforms()
 
 void NewGame()
 {
+  InitCamera();
   InitPlayer(player);
 
   SpawnPlatform(0, 200, 100, 25);
@@ -625,4 +635,6 @@ void Destroy()
 
   for (i = 0; i < 4; ++i)
     al_destroy_bitmap(images[i]);
+
+  al_destroy_bitmap(cam.screen);
 }

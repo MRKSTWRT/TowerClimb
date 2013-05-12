@@ -70,3 +70,14 @@ struct Rect
 Platform platforms[max_platforms];
 int num_platforms = 0;
 int next_platform = 0;
+
+struct Camera
+{
+  int x;
+  int y;
+  int width;
+  int height;
+  ALLEGRO_BITMAP *screen;
+};
+
+Camera cam;
