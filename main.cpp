@@ -19,10 +19,10 @@ bool JustPressed(int keycode); //Returns true if keycode has just been pressed t
 
 void InitCamera();
 
-void InitPlayer(Player &p); //Player constructor, initializes all the starting variables etc.
-void UpdatePlayer(Player &p); //Updates all player logic
-void DrawPlayer(Player &p); //Draws the player, also handles the animation
-void ChangePlayerAnimation(Player &p, int animation, bool hard); //Changes the current animation, set hard to true to restart the animation
+void InitPlayer(); //Player constructor, initializes all the starting variables etc.
+void UpdatePlayer(); //Updates all player logic
+void DrawPlayer(); //Draws the player, also handles the animation
+void ChangePlayerAnimation(int animation, bool hard); //Changes the current animation, set hard to true to restart the animation
 
 void SpawnPlatform(int x, int y, int width, int height);
 void UpdatePlatforms();
@@ -131,14 +131,26 @@ void Update()
     if (!paused)
     {
       UpdatePlatforms();
-      UpdatePlayer(player);
+      UpdatePlayer();
+
+      if ((player.y + cam.y) < HEIGHT / 3)
+        cam.y += 1;
+      
+      if (scrolling)//If the scrolling has started then move the cam by scroll_speed;
+      {
+        cam.y += scroll_speed;
+      }
+      else //Else if the player reaches the threshold start scrolling
+      {
+        if ((player.y + cam.y) < HEIGHT / 3)
+          scrolling = true;
+      }
     }
 
+    //Variables used for debug, delete later
     cur_x = player.x + cam.x;
-    cur_y = player.y - cam.y;
+    cur_y = player.y + cam.y;
 
-    if (player.y < WIDTH / 2)
-      cam.y += 1;
 
     if (JustPressed(R))
     {
@@ -174,7 +186,7 @@ void Draw()
   al_clear_to_color(al_map_rgb(0,0,0));
   
   DrawPlatforms();
-  DrawPlayer(player);
+  DrawPlayer();
 
   al_set_target_bitmap(al_get_backbuffer(display));
   al_draw_bitmap(cam.screen, 0, 0, 0);
@@ -265,272 +277,270 @@ void InitCamera()
   cam.screen = al_create_bitmap(cam.width, cam.height);
 }
 
-void InitPlayer(Player &p)
+void InitPlayer()
 {
-  p.width = 16;
-  p.height = 32;
-  p.scale_x = 2;
-  p.scale_y = 2;
-  p.rotation = 0;
-  p.facing = p.RIGHT;
+  player.width = 16;
+  player.height = 32;
+  player.scale_x = 2;
+  player.scale_y = 2;
+  player.rotation = 0;
+  player.facing = player.RIGHT;
 
-  p.x = 10;
-  p.y = (HEIGHT - (p.height * p.scale_y)) - 25;
+  player.x = 10;
+  player.y = (HEIGHT - (player.height * player.scale_y)) - 25;
 
-  p.max_speed = 5;
-  p.acceleration = 0.25;
-  p.deceleration = 0.2;
-  p.speed = 0;
+  player.max_speed = 5;
+  player.acceleration = 0.25;
+  player.deceleration = 0.2;
+  player.speed = 0;
 
-  p.gravity = 8;
-  p.y_velocity = p.gravity;
-  p.jump_power = 20;
+  player.gravity = 8;
+  player.y_velocity = player.gravity;
+  player.jump_power = 20;
 
-  p.state = p.WALKING;
+  player.state = player.WALKING;
 
-  p.sheet[0] = images[0];
-  p.frames[0] = 1;
-  p.sheet[1] = images[1];
-  p.frames[1] = 2;
-  p.sheet[2] = images[2];
-  p.frames[2] = 1;
-  p.sheet[3] = images[3];
-  p.frames[3] = 1;
+  player.sheet[0] = images[0];
+  player.frames[0] = 1;
+  player.sheet[1] = images[1];
+  player.frames[1] = 2;
+  player.sheet[2] = images[2];
+  player.frames[2] = 1;
+  player.sheet[3] = images[3];
+  player.frames[3] = 1;
 
-  p.current_frame = 0;
-  p.current_animation = p.STAND;
-  p.frame_count = 0;
-  p.delay = 6;
+  player.current_frame = 0;
+  player.current_animation = player.STAND;
+  player.frame_count = 0;
+  player.delay = 6;
 
-  p.sprite = al_create_bitmap(p.width, p.height);
+  player.sprite = al_create_bitmap(player.width, player.height);
 }
 
-void UpdatePlayer(Player &p)
+void UpdatePlayer()
 {
-  if (p.state == p.WALKING)
+  if (player.state == player.WALKING)
   {
 	  if (keys[LEFT])
     {
-      p.facing = p.LEFT;
-      if (p.speed > 0)
+      player.facing = player.LEFT;
+      if (player.speed > 0)
       {
-        ChangePlayerAnimation(p, p.SKID, false);
+        ChangePlayerAnimation(player.SKID, false);
       }
       else
       {
-        ChangePlayerAnimation(p, p.RUN, false);
+        ChangePlayerAnimation(player.RUN, false);
       }
     }
     else if (keys[RIGHT])
     {
-      p.facing = p.RIGHT;
-      if (p.speed < 0)
+      player.facing = player.RIGHT;
+      if (player.speed < 0)
       {
-        ChangePlayerAnimation(p, p.SKID, false);
+        ChangePlayerAnimation(player.SKID, false);
       }
       else
       {
-        ChangePlayerAnimation(p, p.RUN, false);
+        ChangePlayerAnimation(player.RUN, false);
       }
     }
     else
     {
-      ChangePlayerAnimation(p, p.STAND, false);
+      ChangePlayerAnimation(player.STAND, false);
     }
 
     if (JustPressed(UP))
     {
-      p.state = p.JUMPING;
-      p.y_velocity = -p.jump_power;
-      
-      
+      player.state = player.JUMPING;
+      player.y_velocity = -player.jump_power;
     }
   }
 
   if (keys[LEFT])
   {
-    p.facing = p.LEFT;
+    player.facing = player.LEFT;
 
-    if (p.speed <= 0)
+    if (player.speed <= 0)
     {
-      p.speed -= p.acceleration;
+      player.speed -= player.acceleration;
     }
     else
     {
-      p.speed -= p.deceleration;
+      player.speed -= player.deceleration;
     }
 
-    if (p.speed < -p.max_speed)
-      p.speed = -p.max_speed;
+    if (player.speed < -player.max_speed)
+      player.speed = -player.max_speed;
   }
   else if (keys[RIGHT])
   {
-    p.facing = p.RIGHT;
+    player.facing = player.RIGHT;
 
-    if (p.speed >= 0)
+    if (player.speed >= 0)
     {
-      p.speed += p.acceleration;
+      player.speed += player.acceleration;
     }
     else
     {
-      p.speed += p.deceleration;
+      player.speed += player.deceleration;
     }
 
-    if (p.speed > p.max_speed)
-      p.speed = p.max_speed;
+    if (player.speed > player.max_speed)
+      player.speed = player.max_speed;
   }
   else
   {
-    if (p.speed < 0 && p.speed > -p.deceleration)
+    if (player.speed < 0 && player.speed > -player.deceleration)
     {
-      p.speed = 0;
+      player.speed = 0;
     }
-    else if (p.speed > 0 && p.speed < p.deceleration)
+    else if (player.speed > 0 && player.speed < player.deceleration)
     {
-      p.speed = 0;
+      player.speed = 0;
     }
 
-    if (p.speed < 0)
+    if (player.speed < 0)
     {
-      p.speed += p.deceleration;
+      player.speed += player.deceleration;
     }
-    else if (p.speed > 0)
+    else if (player.speed > 0)
     {
-      p.speed -= p.deceleration;
+      player.speed -= player.deceleration;
     }
   }
   
   if (keys[LEFT])
     {
-      if (p.speed <= 0)
+      if (player.speed <= 0)
       {
-        p.speed -= p.acceleration;
+        player.speed -= player.acceleration;
       }
       else
       {
-        p.speed -= p.deceleration;
+        player.speed -= player.deceleration;
       }
 
-      if (p.speed < -p.max_speed)
-        p.speed = -p.max_speed;
+      if (player.speed < -player.max_speed)
+        player.speed = -player.max_speed;
     }
     else if (keys[RIGHT])
     {
-      if (p.speed >= 0)
+      if (player.speed >= 0)
       {
-        p.speed += p.acceleration;
+        player.speed += player.acceleration;
       }
       else
       {
-        p.speed += p.deceleration;
+        player.speed += player.deceleration;
       }
 
-      if (p.speed > p.max_speed)
-        p.speed = p.max_speed;
+      if (player.speed > player.max_speed)
+        player.speed = player.max_speed;
     }
     else
     {
-      if (p.speed < 0 && p.speed > -p.deceleration)
+      if (player.speed < 0 && player.speed > -player.deceleration)
       {
-        p.speed = 0;
+        player.speed = 0;
       }
-      else if (p.speed > 0 && p.speed < p.deceleration)
+      else if (player.speed > 0 && player.speed < player.deceleration)
       {
-        p.speed = 0;
+        player.speed = 0;
       }
 
-      if (p.speed < 0)
+      if (player.speed < 0)
       {
-        p.speed += p.deceleration;
+        player.speed += player.deceleration;
       }
-      else if (p.speed > 0)
+      else if (player.speed > 0)
       {
-        p.speed -= p.deceleration;
+        player.speed -= player.deceleration;
       }
     }
   
-  if (p.state == p.JUMPING && !JustPressed(X))
+  if (player.state == player.JUMPING && !JustPressed(X))
   {
-    ChangePlayerAnimation(p, p.JUMP, false);
-    if (p.y_velocity < p.gravity)
+    ChangePlayerAnimation(player.JUMP, false);
+    if (player.y_velocity < player.gravity)
     {
-      p.y_velocity += 1;
+      player.y_velocity += 1;
     }
-    else if (p.y_velocity >= 0)
+    else if (player.y_velocity >= 0)
     {
-      p.state = p.FALLING;
+      player.state = player.FALLING;
     }
   }
-  else if (p.state == p.FALLING)
+  else if (player.state == player.FALLING)
   {
-    if (p.y_velocity < p.gravity)
+    if (player.y_velocity < player.gravity)
     {
-      ++p.y_velocity;
+      ++player.y_velocity;
     }
   }
 
   //Apply forces to player
-  p.y += p.y_velocity;
-  p.x += p.speed;
+  player.y += player.y_velocity;
+  player.x += player.speed;
 
-  if (p.x < -(p.width * p.scale_x)) //Wrap player if he goes off the left side
-    p.x = WIDTH;
+  if (player.x < -(player.width * player.scale_x)) //Wrap player if he goes off the left side
+    player.x = WIDTH;
 
-  if (p.x > WIDTH) // Wrap player if he goes off the right side
-    p.x = -(p.width * p.scale_x);
+  if (player.x > WIDTH) // Wrap player if he goes off the right side
+    player.x = -(player.width * player.scale_x);
 
   if (PlayerCollidePlatforms() != -1) //Check for a collision
   {
-    p.state = p.WALKING; //Change player state to walking
-    p.y_velocity = 0; //Kill the downward velocity
-    p.y = platforms[PlayerCollidePlatforms()].y - (p.height * p.scale_y); //Make sure the player hasn't sunk into the platform
+    player.state = player.WALKING; //Change player state to walking
+    player.y_velocity = 0; //Kill the downward velocity
+    player.y = platforms[PlayerCollidePlatforms()].y - (player.height * player.scale_y); //Make sure the player hasn't sunk into the platform
   }
   else
   {
-    if (p.state != p.JUMPING)
+    if (player.state != player.JUMPING)
     {
-      p.state = p.FALLING; //If we're not jumping and we aren't touching the ground then we must be falling
+      player.state = player.FALLING; //If we're not jumping and we aren't touching the ground then we must be falling
     }
   }
 }
 
-void DrawPlayer(Player &p)
+void DrawPlayer()
 {
-  al_set_target_bitmap(p.sprite); //Set the target to the player sprite image
+  al_set_target_bitmap(player.sprite); //Set the target to the player sprite image
   al_clear_to_color(al_map_rgba(0,0,0,0)); //Clear the sprite to transparent
 
-  if (p.frame_count >= p.delay) //If the delay has passed
+  if (player.frame_count >= player.delay) //If the delay has passed
   {
-    p.frame_count = 0; //Set counter to zero
-    ++p.current_frame; //Increment the current frame
+    player.frame_count = 0; //Set counter to zero
+    ++player.current_frame; //Increment the current frame
     
-    if (p.current_frame > p.frames[p.current_animation] - 1) //if we've gone past the last frame
-      p.current_frame = 0; //Go back to the first frame
+    if (player.current_frame > player.frames[player.current_animation] - 1) //if we've gone past the last frame
+      player.current_frame = 0; //Go back to the first frame
   }
   
-  ++p.frame_count; //Increment delay counter
+  ++player.frame_count; //Increment delay counter
 
-  if (p.facing == p.RIGHT)
+  if (player.facing == player.RIGHT)
   {
-    al_draw_bitmap_region(p.sheet[p.current_animation], p.current_frame * p.width, 0, p.width, p.height, 0, 0, 0);
+    al_draw_bitmap_region(player.sheet[player.current_animation], player.current_frame * player.width, 0, player.width, player.height, 0, 0, 0);
   }
-  else if (p.facing == p.LEFT)
+  else if (player.facing == player.LEFT)
   {
-    al_draw_bitmap_region(p.sheet[p.current_animation], p.current_frame * p.width, 0, p.width, p.height, 0, 0, ALLEGRO_FLIP_HORIZONTAL);
+    al_draw_bitmap_region(player.sheet[player.current_animation], player.current_frame * player.width, 0, player.width, player.height, 0, 0, ALLEGRO_FLIP_HORIZONTAL);
   }
 
   al_set_target_bitmap(cam.screen);
   
-  al_draw_scaled_bitmap(p.sprite, 0, 0, p.width, p.height, p.x - cam.x, p.y + cam.y, p.width * p.scale_x, p.height * p.scale_y, 0);
+  al_draw_scaled_bitmap(player.sprite, 0, 0, player.width, player.height, player.x - cam.x, player.y + cam.y, player.width * player.scale_x, player.height * player.scale_y, 0);
 }
 
-void ChangePlayerAnimation(Player &p, int animation, bool hard)
+void ChangePlayerAnimation(int animation, bool hard)
 {
-  if (hard || p.current_animation != animation)
+  if (hard || player.current_animation != animation)
   {
-    p.frame_count = 0;
-    p.current_frame = 0;
-    p.current_animation = animation;
+    player.frame_count = 0;
+    player.current_frame = 0;
+    player.current_animation = animation;
   }
 }
 
@@ -627,8 +637,10 @@ int PlayerCollidePlatforms()
 
 void NewGame()
 {
+  scrolling = false;
+
   InitCamera();
-  InitPlayer(player);
+  InitPlayer();
 
   //Spawn the starting platforms
   SpawnPlatform(0, HEIGHT - 25, WIDTH, 25);

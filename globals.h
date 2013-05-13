@@ -41,3 +41,9 @@ bool paused = false;
 
 //Set this to true to reset everything for a new game
 bool new_game = true;
+
+//Set this to true to start the automatic scrolling upwards
+bool scrolling = false;
+
+//The current speed of the upward scroll
+float scroll_speed = 1;
