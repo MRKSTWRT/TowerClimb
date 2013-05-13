@@ -36,8 +36,10 @@ void Destroy(); //Destroy everything when closing
 
 //Objects
 
+//Debug vars
 int cur_x;
 int cur_y;
+int cam_test;
 
 int main(void)
 {
@@ -133,7 +135,7 @@ void Update()
       UpdatePlatforms();
       UpdatePlayer();
 
-      if ((player.y + cam.y) < HEIGHT / 3)
+      if ((player.y + cam.y) < HEIGHT / 5)
         cam.y += 1;
       
       if (scrolling)//If the scrolling has started then move the cam by scroll_speed;
@@ -142,9 +144,14 @@ void Update()
       }
       else //Else if the player reaches the threshold start scrolling
       {
-        if ((player.y + cam.y) < HEIGHT / 3)
+        if ((player.y + cam.y) < HEIGHT / 5)
           scrolling = true;
       }
+      
+      //Keeps track of the highest point the player has reached so far
+      if (highest < -(player.y - zero))
+        highest = -(player.y - zero);
+      
     }
 
     //Variables used for debug, delete later
@@ -191,7 +198,9 @@ void Draw()
   al_set_target_bitmap(al_get_backbuffer(display));
   al_draw_bitmap(cam.screen, 0, 0, 0);
 
-  al_draw_textf(fonts[0], al_map_rgb(255,0,0), 2, 2, 0, "%i FPS - X: %i - Y: %i", game_fps, cur_x, cur_y);
+  cam_test = -cam.y + cam.height;
+
+  al_draw_textf(fonts[0], al_map_rgb(255,0,0), 2, 2, 0, "Y: %i - Score: %i - Plat: %i Cam: %i", cur_y, highest, platforms[0].y, cam_test);
   al_flip_display();
 }
 
@@ -315,6 +324,8 @@ void InitPlayer()
   player.delay = 6;
 
   player.sprite = al_create_bitmap(player.width, player.height);
+
+  zero = HEIGHT - (player.height * player.scale_y) - 25;
 }
 
 void UpdatePlayer()
@@ -550,11 +561,11 @@ void SpawnPlatform(int x, int y, int width, int height)
   {
     if (!platforms[i].alive)
     {
-      platforms[num_platforms].x = x;
-      platforms[num_platforms].y = y;
-      platforms[num_platforms].width = width;
-      platforms[num_platforms].height = height;
-      platforms[num_platforms].alive = true;
+      platforms[i].x = x;
+      platforms[i].y = y;
+      platforms[i].width = width;
+      platforms[i].height = height;
+      platforms[i].alive = true;
 
       num_platforms++;
 
@@ -565,7 +576,20 @@ void SpawnPlatform(int x, int y, int width, int height)
 
 void UpdatePlatforms()
 {
-
+  int i = 0;
+  
+  //First we get rid of platforms that aren't active anymore
+  for (i = 0; i < max_platforms; ++i)
+  {
+    if (platforms[i].alive)
+    {
+      //If the platform is 200 pixels off the screen we can consider it useless and remove it
+      if (platforms[i].y > (-cam.y + cam.height + 200))
+      {
+        RemovePlatform(i);
+      }
+    }
+  }
 }
 
 void DrawPlatforms()
@@ -606,7 +630,7 @@ int PlayerCollidePlatforms()
   player_top_left.x = player.x;
   player_top_right.x = player.x + (player.width * player.scale_y);
 
-  for (int i = 0; i < num_platforms; ++i)
+  for (int i = 0; i < max_platforms; ++i)
   {
     if (platforms[i].alive)
     {
@@ -637,10 +661,20 @@ int PlayerCollidePlatforms()
 
 void NewGame()
 {
+  int i;
+
   scrolling = false;
+  
+  highest = 0;
 
   InitCamera();
   InitPlayer();
+
+  //Remove all platforms
+  for (i = 0; i < max_platforms; ++i)
+  {
+    RemovePlatform(i);
+  }
 
   //Spawn the starting platforms
   SpawnPlatform(0, HEIGHT - 25, WIDTH, 25);

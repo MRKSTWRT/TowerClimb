@@ -47,3 +47,9 @@ bool scrolling = false;
 
 //The current speed of the upward scroll
 float scroll_speed = 1;
+
+//Keeps track of the current score
+int highest = 0;
+
+//A bit hacky, keeps track of where zero score should be
+int zero;
