@@ -694,5 +694,6 @@ void Destroy()
   for (i = 0; i < 4; ++i)
     al_destroy_bitmap(images[i]);
 
+  al_destroy_bitmap(player.sprite);
   al_destroy_bitmap(cam.screen);
 }
