@@ -5,11 +5,8 @@ const int FPS = 60;
 const int WIDTH = 400;
 const int HEIGHT = 600;
 
-//PI Constant
-const float PI = 3.141592653589793;
-
 //Maximum number of platforms at any one time
-const int max_platforms = 15;
+const int max_platforms = 12;
 
 //Keeps track of the number of platforms currently alive
 int num_platforms = 0;
@@ -62,7 +59,7 @@ int zero;
 float dificulty = 1;
 
 //The minimum amount of space between each platform
-int platform_increment = 75;
+int platform_increment = 96;
 
 //Point for calculating the next platform location
 Point platform_spawn;
@@ -72,3 +69,6 @@ int platform_widths[11] = {100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200
 
 //Helper for calculating the next width
 int next_width;
+
+//How many pixels to offset the background when drawing
+int bg_offset = 0;

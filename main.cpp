@@ -30,6 +30,9 @@ void DrawPlatforms();
 void RemovePlatform(int id); //"kills" the platform at id in the array
 int PlayerCollidePlatforms(); //Returns the index of the platform being collided with or -1 if no collision.
 
+void UpdateBackground(); //Updates the current background offset
+void DrawBackground(); //Draws the background
+
 int Rand(int limit);
 
 void NewGame(); //Re-initializes everything for a new game
@@ -57,6 +60,7 @@ int main(void)
   //Allegro variables
   ALLEGRO_EVENT_QUEUE *event_queue = NULL;
   ALLEGRO_TIMER *timer = NULL;
+  ALLEGRO_TIMER *rand_timer = NULL;
 
   //Initialization Functions
   if(!al_init())										//initialize Allegro
@@ -74,6 +78,10 @@ int main(void)
   al_init_font_addon();
   al_init_ttf_addon();
 
+  srand(time(NULL)); //Seed random number generator
+
+  al_set_window_title(display, "TowerClimb");
+
   event_queue = al_create_event_queue();
   timer = al_create_timer(1.0 / FPS);
 
@@ -85,7 +93,8 @@ int main(void)
   images[1] = al_load_bitmap("Assets/Images/Mario-Run.png");
   images[2] = al_load_bitmap("Assets/Images/Mario-Skid.png");
   images[3] = al_load_bitmap("Assets/Images/Mario-Jump.png");
-  images[4] = al_load_bitmap("Assets/Images/Platform1.png");
+  images[4] = al_load_bitmap("Assets/Images/Platform2.png");
+  images[5] = al_load_bitmap("Assets/Images/Background.png");
   
 
   al_register_event_source(event_queue, al_get_keyboard_event_source());
@@ -132,8 +141,6 @@ int main(void)
 
 void Update()
 {
-  srand(time(NULL)); //Seed random number generator
-
   if (current_state == GAME)
   {
     if (new_game)
@@ -141,11 +148,16 @@ void Update()
 
     if (!paused)
     {
+      UpdateBackground();
       UpdatePlatforms();
       UpdatePlayer();
 
+      //Save the state of the camera to help with the fake background scrolling
+      cam.last.x = cam.x;
+      cam.last.y = cam.y;
+
       if ((player.y + cam.y) < HEIGHT / 5)
-        cam.y += 1;
+        cam.y += 2;
       
       if (scrolling)//If the scrolling has started then move the cam by scroll_speed;
       {
@@ -169,7 +181,6 @@ void Update()
     //Variables used for debug, delete later
     cur_x = player.x + cam.x;
     cur_y = player.y + cam.y;
-
 
     if (JustPressed(R))
     {
@@ -205,6 +216,7 @@ void Draw()
   al_clear_to_color(al_map_rgb(0,0,0)); //Clears the screen to black
   
   //Run individual drawing functions
+  DrawBackground();
   DrawPlatforms();
   DrawPlayer();
 
@@ -718,6 +730,20 @@ int PlayerCollidePlatforms()
   return -1;
 }
 
+void UpdateBackground()
+{
+  bg_offset += cam.y - cam.last.y;
+  if (bg_offset > 32)
+    bg_offset -= 32;
+}
+
+void DrawBackground()
+{
+  al_set_target_bitmap(cam.screen);
+
+  al_draw_bitmap(images[5], 0, -32 + bg_offset, 0);
+}
+
 int Rand(int limit)
 {
   return (int)rand()%limit;
@@ -757,7 +783,7 @@ void Destroy()
 
   al_destroy_font(fonts[0]);
 
-  for (i = 0; i < 5; ++i)
+  for (i = 0; i < 6; ++i)
     al_destroy_bitmap(images[i]);
 
   al_destroy_bitmap(player.sprite);
