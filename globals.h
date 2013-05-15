@@ -8,7 +8,11 @@ const int HEIGHT = 600;
 //PI Constant
 const float PI = 3.141592653589793;
 
-const int max_platforms = 20;
+//Maximum number of platforms at any one time
+const int max_platforms = 15;
+
+//Keeps track of the number of platforms currently alive
+int num_platforms = 0;
 
 //Setting this to true will close the game
 bool done = false;
@@ -53,3 +57,18 @@ int highest = 0;
 
 //A bit hacky, keeps track of where zero score should be
 int zero;
+
+//Keeps track of the dificulty, increase this to make the game wait longer before spawning a new platform
+float dificulty = 1;
+
+//The minimum amount of space between each platform
+int platform_increment = 75;
+
+//Point for calculating the next platform location
+Point platform_spawn;
+
+//Array containing the possible widths for platforms
+int platform_widths[11] = {100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200};
+
+//Helper for calculating the next width
+int next_width;

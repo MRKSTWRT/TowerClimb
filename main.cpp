@@ -6,8 +6,8 @@
 #include <allegro5\allegro_ttf.h>
 #include <allegro5\allegro_image.h>
 
-#include "globals.h"
 #include "objects.h"
+#include "globals.h"
 #include "assets.h"
 
 //prototypes
@@ -24,17 +24,23 @@ void UpdatePlayer(); //Updates all player logic
 void DrawPlayer(); //Draws the player, also handles the animation
 void ChangePlayerAnimation(int animation, bool hard); //Changes the current animation, set hard to true to restart the animation
 
-void SpawnPlatform(int x, int y, int width, int height);
+void SpawnPlatform(int x, int y, int width, int height, int id); //Spawns a platform of width*height at x,y. Supply id for insertion or -1 for first available
 void UpdatePlatforms();
 void DrawPlatforms();
 void RemovePlatform(int id); //"kills" the platform at id in the array
 int PlayerCollidePlatforms(); //Returns the index of the platform being collided with or -1 if no collision.
+
+int Rand(int limit);
 
 void NewGame(); //Re-initializes everything for a new game
 
 void Destroy(); //Destroy everything when closing
 
 //Objects
+Player player; //The player object
+Platform platforms[max_platforms]; //Array containing all of the platforms
+Camera cam; //The camera object for rendering the correct part of the screen
+
 
 //Debug vars
 int cur_x;
@@ -79,6 +85,7 @@ int main(void)
   images[1] = al_load_bitmap("Assets/Images/Mario-Run.png");
   images[2] = al_load_bitmap("Assets/Images/Mario-Skid.png");
   images[3] = al_load_bitmap("Assets/Images/Mario-Jump.png");
+  images[4] = al_load_bitmap("Assets/Images/Platform1.png");
   
 
   al_register_event_source(event_queue, al_get_keyboard_event_source());
@@ -125,6 +132,8 @@ int main(void)
 
 void Update()
 {
+  srand(time(NULL)); //Seed random number generator
+
   if (current_state == GAME)
   {
     if (new_game)
@@ -151,6 +160,9 @@ void Update()
       //Keeps track of the highest point the player has reached so far
       if (highest < -(player.y - zero))
         highest = -(player.y - zero);
+
+      if (JustPressed(X))
+        dificulty += .1;
       
     }
 
@@ -189,18 +201,17 @@ void Update()
 
 void Draw()
 { 
-  al_set_target_bitmap(cam.screen);
-  al_clear_to_color(al_map_rgb(0,0,0));
+  al_set_target_bitmap(cam.screen); //Sets the render target to our camera bitmap
+  al_clear_to_color(al_map_rgb(0,0,0)); //Clears the screen to black
   
+  //Run individual drawing functions
   DrawPlatforms();
   DrawPlayer();
 
-  al_set_target_bitmap(al_get_backbuffer(display));
-  al_draw_bitmap(cam.screen, 0, 0, 0);
+  al_set_target_bitmap(al_get_backbuffer(display)); //Set render target to our back buffer
+  al_draw_bitmap(cam.screen, 0, 0, 0); //Draw the camera to the back buffer
 
-  cam_test = -cam.y + cam.height;
-
-  al_draw_textf(fonts[0], al_map_rgb(255,0,0), 2, 2, 0, "Y: %i - Score: %i - Plat: %i Cam: %i", cur_y, highest, platforms[0].y, cam_test);
+  al_draw_textf(fonts[0], al_map_rgb(255,0,0), 2, 2, 0, "X: %i Y: %i - Score: %i", cur_x,  cur_y, highest);
   al_flip_display();
 }
 
@@ -305,7 +316,9 @@ void InitPlayer()
 
   player.gravity = 8;
   player.y_velocity = player.gravity;
-  player.jump_power = 20;
+  player.jump_power = 21;
+
+  player.health = 3;
 
   player.state = player.WALKING;
 
@@ -555,21 +568,55 @@ void ChangePlayerAnimation(int animation, bool hard)
   }
 }
 
-void SpawnPlatform(int x, int y, int width, int height)
+void SpawnPlatform(int x, int y, int width, int height, int id)
 {
-  for (int i = 0; i < max_platforms; ++i)
+  int count = width / 32;
+
+  if (id == -1)
   {
-    if (!platforms[i].alive)
+    for (int i = 0; i < max_platforms; ++i)
     {
-      platforms[i].x = x;
-      platforms[i].y = y;
-      platforms[i].width = width;
-      platforms[i].height = height;
-      platforms[i].alive = true;
+      if (!platforms[i].alive)
+      {
+        platforms[i].x = x;
+        platforms[i].y = y;
+        platforms[i].width = width;
+        platforms[i].height = height;
+        platforms[i].alive = true;
+        platforms[i].sprite = al_create_bitmap(width, height);
+
+        al_set_target_bitmap(platforms[i].sprite);
+
+        for (int j = 0; j < count + 1; ++j)
+        {
+          al_draw_bitmap(images[4], j * 32, 0, 0);
+        }
+
+        num_platforms++;
+
+        break;
+      }
+    }
+  }
+  else
+  {
+    if (!platforms[id].alive)
+    {
+      platforms[id].x = x;
+      platforms[id].y = y;
+      platforms[id].width = width;
+      platforms[id].height = height;
+      platforms[id].alive = true;
+      platforms[id].sprite = al_create_bitmap(width, height);
+
+      al_set_target_bitmap(platforms[id].sprite);
+
+      for (int j = 0; j < count + 1; ++j)
+      {
+        al_draw_bitmap(images[4], j * 32, 0, 0);
+      }
 
       num_platforms++;
-
-      break;
     }
   }
 }
@@ -578,7 +625,7 @@ void UpdatePlatforms()
 {
   int i = 0;
   
-  //First we get rid of platforms that aren't active anymore
+  //Loop through the whole platform array
   for (i = 0; i < max_platforms; ++i)
   {
     if (platforms[i].alive)
@@ -588,6 +635,17 @@ void UpdatePlatforms()
       {
         RemovePlatform(i);
       }
+    }
+    else //If platform is not alive we make use of it by spawning a new one in it's place
+    {
+      next_width = platform_widths[Rand(11)];
+      next_width -= Rand(50);
+
+      platform_spawn.y -= platform_increment * dificulty;
+      platform_spawn.x = ((WIDTH / 5) * Rand(5)) - (next_width / 2) + 50;
+      
+
+      SpawnPlatform(platform_spawn.x, platform_spawn.y, next_width, 32, i);
     }
   }
 }
@@ -600,7 +658,7 @@ void DrawPlatforms()
   {
     if (platforms[i].alive)
     {
-      al_draw_filled_rectangle(platforms[i].x - cam.x, platforms[i].y + cam.y, platforms[i].x + platforms[i].width - cam.x, platforms[i].y + platforms[i].height + cam.y, al_map_rgb(255,255,255));
+      al_draw_bitmap(platforms[i].sprite, platforms[i].x - cam.x, platforms[i].y + cam.y, 0);
     }
   } 
 }
@@ -608,6 +666,7 @@ void DrawPlatforms()
 void RemovePlatform(int id)
 {
   platforms[id].alive = false;
+  al_destroy_bitmap(platforms[id].sprite);
   --num_platforms;
 }
 
@@ -659,6 +718,11 @@ int PlayerCollidePlatforms()
   return -1;
 }
 
+int Rand(int limit)
+{
+  return (int)rand()%limit;
+}
+
 void NewGame()
 {
   int i;
@@ -677,10 +741,12 @@ void NewGame()
   }
 
   //Spawn the starting platforms
-  SpawnPlatform(0, HEIGHT - 25, WIDTH, 25);
-  SpawnPlatform(0, HEIGHT - 175, 100, 25);
-  SpawnPlatform(125, HEIGHT - 250, 100, 25);
-  SpawnPlatform(250, HEIGHT - 325, 100, 25);
+  SpawnPlatform(0, HEIGHT - 25, WIDTH, 32, -1);
+  SpawnPlatform(0, HEIGHT - 175, 100, 32, -1);
+  SpawnPlatform(125, HEIGHT - 250, 100, 32, -1);
+  SpawnPlatform(250, HEIGHT - 325, 100, 32, -1);
+
+  platform_spawn.y = HEIGHT - 325;
 
   new_game = false;
 }
@@ -691,7 +757,7 @@ void Destroy()
 
   al_destroy_font(fonts[0]);
 
-  for (i = 0; i < 4; ++i)
+  for (i = 0; i < 5; ++i)
     al_destroy_bitmap(images[i]);
 
   al_destroy_bitmap(player.sprite);

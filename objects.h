@@ -19,6 +19,8 @@ struct Player
   float jump_power;
   float gravity;
 
+  int health;
+
   enum states{WALKING, FALLING, JUMPING};
   int state;
 
@@ -40,8 +42,6 @@ struct Player
   ALLEGRO_BITMAP *sprite;
 };
 
-Player player;
-
 struct Platform
 {
   int x;
@@ -53,6 +53,10 @@ struct Platform
 
   enum type{NORMAL};
   int type;
+
+  int position;
+
+  ALLEGRO_BITMAP *sprite;
 };
 
 struct Point
@@ -67,10 +71,6 @@ struct Rect
   Point bottom_right;
 };
 
-Platform platforms[max_platforms];
-int num_platforms = 0;
-int next_platform = 0;
-
 struct Camera
 {
   int x;
@@ -79,5 +79,3 @@ struct Camera
   int height;
   ALLEGRO_BITMAP *screen;
 };
-
-Camera cam;
