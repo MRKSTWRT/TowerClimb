@@ -33,6 +33,8 @@ int PlayerCollidePlatforms(); //Returns the index of the platform being collided
 void UpdateBackground(); //Updates the current background offset
 void DrawBackground(); //Draws the background
 
+void DrawPauseScreen(); //Draws the pause screen
+
 int Rand(int limit);
 
 void NewGame(); //Re-initializes everything for a new game
@@ -146,36 +148,47 @@ void Update()
     if (new_game)
       NewGame();
 
-    if (!paused)
+    if (!game_over)
     {
-      UpdateBackground();
-      UpdatePlatforms();
-      UpdatePlayer();
-
-      //Save the state of the camera to help with the fake background scrolling
-      cam.last.x = cam.x;
-      cam.last.y = cam.y;
-
-      if ((player.y + cam.y) < HEIGHT / 5)
-        cam.y += 2;
-      
-      if (scrolling)//If the scrolling has started then move the cam by scroll_speed;
+      if (!paused)
       {
-        cam.y += scroll_speed;
-      }
-      else //Else if the player reaches the threshold start scrolling
-      {
-        if ((player.y + cam.y) < HEIGHT / 5)
-          scrolling = true;
-      }
-      
-      //Keeps track of the highest point the player has reached so far
-      if (highest < -(player.y - zero))
-        highest = -(player.y - zero);
+        UpdateBackground();
+        UpdatePlatforms();
+        UpdatePlayer();
 
-      if (JustPressed(X))
-        dificulty += .1;
+        //Save the state of the camera to help with the fake background scrolling
+        cam.last.x = cam.x;
+        cam.last.y = cam.y;
+
+        if ((player.y + cam.y) < HEIGHT / 4)
+          cam.y += 3;
       
+        if (scrolling)//If the scrolling has started then move the cam by scroll_speed;
+        {
+          cam.y += scroll_speed;
+        }
+        else //Else if the player reaches the threshold start scrolling
+        {
+          if ((player.y + cam.y) < HEIGHT / 4)
+            scrolling = true;
+        }
+      
+        //Keeps track of the highest point the player has reached so far
+        if (highest < -(player.y - zero))
+          highest = -(player.y - zero);
+
+        if (JustPressed(X))
+          dificulty += .1;
+
+        if (JustPressed(P))
+          paused = true;
+      
+      }
+      else //Game is paused, update pause screen
+      {
+        if (JustPressed(P))
+          paused = false;
+      }
     }
 
     //Variables used for debug, delete later
@@ -220,6 +233,9 @@ void Draw()
   DrawPlatforms();
   DrawPlayer();
 
+  if (paused)
+    DrawPauseScreen();
+
   al_set_target_bitmap(al_get_backbuffer(display)); //Set render target to our back buffer
   al_draw_bitmap(cam.screen, 0, 0, 0); //Draw the camera to the back buffer
 
@@ -257,6 +273,9 @@ void CheckKeys(ALLEGRO_EVENT &ev, bool pressed)
     case ALLEGRO_KEY_R:
       keys[R] = true;
       break;
+    case ALLEGRO_KEY_P:
+      keys[P] = true;
+      break;
     }
   }
   else
@@ -284,6 +303,9 @@ void CheckKeys(ALLEGRO_EVENT &ev, bool pressed)
     case ALLEGRO_KEY_R:
       keys[R] = false;
       break;
+    case ALLEGRO_KEY_P:
+      keys[P] = false;
+      break;
     }
   }
 }
@@ -304,6 +326,8 @@ void InitCamera()
 {
   cam.x= 0;
   cam.y = 0;
+  cam.last.x = 0;
+  cam.last.y = 0;
   cam.width = WIDTH;
   cam.height = HEIGHT;
   cam.screen = al_create_bitmap(cam.width, cam.height);
@@ -328,7 +352,7 @@ void InitPlayer()
 
   player.gravity = 8;
   player.y_velocity = player.gravity;
-  player.jump_power = 21;
+  player.jump_power = 24;
 
   player.health = 3;
 
@@ -554,7 +578,8 @@ void DrawPlayer()
       player.current_frame = 0; //Go back to the first frame
   }
   
-  ++player.frame_count; //Increment delay counter
+  if (!paused)
+    ++player.frame_count; //Increment delay counter
 
   if (player.facing == player.RIGHT)
   {
@@ -643,7 +668,7 @@ void UpdatePlatforms()
     if (platforms[i].alive)
     {
       //If the platform is 200 pixels off the screen we can consider it useless and remove it
-      if (platforms[i].y > (-cam.y + cam.height + 200))
+      if (platforms[i].y > (-cam.y + cam.height + 100))
       {
         RemovePlatform(i);
       }
@@ -744,6 +769,12 @@ void DrawBackground()
   al_draw_bitmap(images[5], 0, -32 + bg_offset, 0);
 }
 
+void DrawPauseScreen()
+{
+  al_set_target_bitmap(cam.screen);
+  al_draw_filled_rectangle(0, 0, WIDTH, HEIGHT, al_map_rgba(0,0,0,200));
+}
+
 int Rand(int limit)
 {
   return (int)rand()%limit;
@@ -754,8 +785,11 @@ void NewGame()
   int i;
 
   scrolling = false;
+  game_over = false;
   
   highest = 0;
+  bg_offset = 0;
+
 
   InitCamera();
   InitPlayer();

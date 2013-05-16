@@ -18,10 +18,10 @@ bool done = false;
 bool redraw = true;
 
 //Keeps track of the pressed state of each key, true means key is down
-enum KEYS{UP, DOWN, LEFT, RIGHT, X, Z, R};
-const int num_keys = 7;
-bool keys[num_keys] = {false, false, false, false, false, false, false};
-bool old_keys[num_keys] = {false, false, false, false, false, false, false};
+enum KEYS{UP, DOWN, LEFT, RIGHT, X, Z, R, P};
+const int num_keys = 8;
+bool keys[num_keys] = {false, false, false, false, false, false, false, false};
+bool old_keys[num_keys] = {false, false, false, false, false, false, false, false};
 
 //Keeps track of the state, changing current_state will switch the state.
 enum STATES{GAME, MENU};
@@ -42,6 +42,9 @@ bool paused = false;
 
 //Set this to true to reset everything for a new game
 bool new_game = true;
+
+//When this is true display game over screen
+bool game_over = false;
 
 //Set this to true to start the automatic scrolling upwards
 bool scrolling = false;
