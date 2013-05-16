@@ -33,6 +33,8 @@ int PlayerCollidePlatforms(); //Returns the index of the platform being collided
 void UpdateBackground(); //Updates the current background offset
 void DrawBackground(); //Draws the background
 
+void DrawHUD(); //Draw the HUD
+
 void DrawPauseScreen(); //Draws the pause screen
 
 int Rand(int limit);
@@ -232,14 +234,13 @@ void Draw()
   DrawBackground();
   DrawPlatforms();
   DrawPlayer();
+  DrawHUD();
 
   if (paused)
     DrawPauseScreen();
 
   al_set_target_bitmap(al_get_backbuffer(display)); //Set render target to our back buffer
   al_draw_bitmap(cam.screen, 0, 0, 0); //Draw the camera to the back buffer
-
-  al_draw_textf(fonts[0], al_map_rgb(255,0,0), 2, 2, 0, "X: %i Y: %i - Score: %i", cur_x,  cur_y, highest);
   al_flip_display();
 }
 
@@ -767,6 +768,13 @@ void DrawBackground()
   al_set_target_bitmap(cam.screen);
 
   al_draw_bitmap(images[5], 0, -32 + bg_offset, 0);
+}
+
+void DrawHUD()
+{
+  al_set_target_bitmap(cam.screen);
+
+  al_draw_textf(fonts[0], al_map_rgb(255,0,0), 2, 2, 0, "X: %i Y: %i - Score: %i", cur_x,  cur_y, highest);
 }
 
 void DrawPauseScreen()
