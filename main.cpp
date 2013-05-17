@@ -32,7 +32,7 @@ int PlayerCollidePlatforms(); //Returns the index of the platform being collided
 
 void SpawnPickup(int x, int y, int type); //Spawns a pickup of type at x,y
 void UpdatePickups(); //Updates the pickups
-int PlayerCollidePickups(); //Returns the index of the pickup being collided with or -1 for no collision
+void PlayerCollidePickups(); //Checks for collisions on all the powerups currently in play, calling CollectPickup if necessary
 void CollectPickup(int id); //To be called when a pickup is collected, takes actions depending on pickup
 void RemovePickup(int id); //Removes the pickup from play
 void DrawPickups(); //Draws the pickups to the screen
@@ -90,7 +90,7 @@ int main(void)
   al_init_font_addon();
   al_init_ttf_addon();
 
-  srand(time(NULL)); //Seed random number generator
+  
 
   al_set_window_title(display, "TowerClimb");
 
@@ -346,10 +346,10 @@ void InitCamera()
 
 void InitPlayer()
 {
-  player.width = 16;
-  player.height = 32;
-  player.scale_x = 2;
-  player.scale_y = 2;
+  player.width = 32;
+  player.height = 64;
+  player.scale_x = 1;
+  player.scale_y = 1;
   player.rotation = 0;
   player.facing = player.RIGHT;
 
@@ -749,7 +749,6 @@ int PlayerCollidePlatforms()
 	      if ((player.bottom_left.x >= platforms[i].hitbox.top_left.x && player.bottom_left.x <= platforms[i].hitbox.bottom_right.x) && (player.bottom_left.y >= platforms[i].hitbox.top_left.y && player.bottom_left.y <= platforms[i].hitbox.bottom_right.y) ||
 	            (player.bottom_right.x >= platforms[i].hitbox.top_left.x && player.bottom_right.x <= platforms[i].hitbox.bottom_right.x) && (player.bottom_right.y >= platforms[i].hitbox.top_left.y && player.bottom_right.y <= platforms[i].hitbox.bottom_right.y))
 	      {
-	        //player.y = plat.top_left.y - (player.height * player.scale_y);
 	        return i;
 	      }
       } 
@@ -795,9 +794,9 @@ void UpdatePickups()
 
 }
 
-int PlayerCollidePickups()
+void PlayerCollidePickups()
 {
-  return -1;
+  
 }
 
 void CollectPickup(int id)
