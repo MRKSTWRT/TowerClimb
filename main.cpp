@@ -30,6 +30,13 @@ void DrawPlatforms();
 void RemovePlatform(int id); //"kills" the platform at id in the array
 int PlayerCollidePlatforms(); //Returns the index of the platform being collided with or -1 if no collision.
 
+void SpawnPickup(int x, int y, int type); //Spawns a pickup of type at x,y
+void UpdatePickups(); //Updates the pickups
+int PlayerCollidePickups(); //Returns the index of the pickup being collided with or -1 for no collision
+void CollectPickup(int id); //To be called when a pickup is collected, takes actions depending on pickup
+void RemovePickup(int id); //Removes the pickup from play
+void DrawPickups(); //Draws the pickups to the screen
+
 void UpdateBackground(); //Updates the current background offset
 void DrawBackground(); //Draws the background
 
@@ -46,6 +53,7 @@ void Destroy(); //Destroy everything when closing
 //Objects
 Player player; //The player object
 Platform platforms[max_platforms]; //Array containing all of the platforms
+Pickup pickups[max_pickups]; //Array containing all the pickups
 Camera cam; //The camera object for rendering the correct part of the screen
 
 
@@ -99,6 +107,7 @@ int main(void)
   images[3] = al_load_bitmap("Assets/Images/Mario-Jump.png");
   images[4] = al_load_bitmap("Assets/Images/Platform2.png");
   images[5] = al_load_bitmap("Assets/Images/Background.png");
+  images[6] = al_load_bitmap("Assets/Images/Coin.png");
   
 
   al_register_event_source(event_queue, al_get_keyboard_event_source());
@@ -233,6 +242,7 @@ void Draw()
   //Run individual drawing functions
   DrawBackground();
   DrawPlatforms();
+  DrawPickups();
   DrawPlayer();
   DrawHUD();
 
@@ -544,6 +554,16 @@ void UpdatePlayer()
   player.y += player.y_velocity;
   player.x += player.speed;
 
+  //Update hitbox and corners
+  player.bottom_left.y = player.y + player.height * player.scale_y;
+  player.bottom_right.y = player.y + player.height * player.scale_y;
+  player.bottom_left.x = player.x;
+  player.bottom_right.x = player.x + (player.width * player.scale_x);
+
+  player.hitbox.bottom_right = player.bottom_right;
+  player.hitbox.top_left.x = player.x;
+  player.hitbox.top_left.y = player.y;
+
   if (player.x < -(player.width * player.scale_x)) //Wrap player if he goes off the left side
     player.x = WIDTH;
 
@@ -623,6 +643,11 @@ void SpawnPlatform(int x, int y, int width, int height, int id)
         platforms[i].alive = true;
         platforms[i].sprite = al_create_bitmap(width, height);
 
+        platforms[i].hitbox.top_left.x = x;
+        platforms[i].hitbox.top_left.y = y;
+        platforms[i].hitbox.bottom_right.x = x + width;
+        platforms[i].hitbox.bottom_right.y = y + height;
+
         al_set_target_bitmap(platforms[i].sprite);
 
         for (int j = 0; j < count + 1; ++j)
@@ -646,6 +671,11 @@ void SpawnPlatform(int x, int y, int width, int height, int id)
       platforms[id].height = height;
       platforms[id].alive = true;
       platforms[id].sprite = al_create_bitmap(width, height);
+
+      platforms[id].hitbox.top_left.x = x;
+      platforms[id].hitbox.top_left.y = y;
+      platforms[id].hitbox.bottom_right.x = x + width;
+      platforms[id].hitbox.bottom_right.y = y + height;
 
       al_set_target_bitmap(platforms[id].sprite);
 
@@ -710,37 +740,14 @@ void RemovePlatform(int id)
 
 int PlayerCollidePlatforms()
 {
-  Point player_bottom_left;
-  Point player_bottom_right;
-  Point player_top_left;
-  Point player_top_right;
-
-  player_bottom_left.y = player.y + player.height * player.scale_y;
-  player_bottom_right.y = player.y + player.height * player.scale_y;
-  
-  player_bottom_left.x = player.x;
-  player_bottom_right.x = player.x + (player.width * player.scale_x);
-
-  player_top_left.y = player.y;
-  player_top_right.y = player.y;
-
-  player_top_left.x = player.x;
-  player_top_right.x = player.x + (player.width * player.scale_y);
-
   for (int i = 0; i < max_platforms; ++i)
   {
     if (platforms[i].alive)
     {
-      Rect plat;
-      plat.top_left.x = platforms[i].x;
-      plat.top_left.y = platforms[i].y;
-      plat.bottom_right.x = platforms[i].x + platforms[i].width;
-      plat.bottom_right.y = platforms[i].y + platforms[i].height;
-
       if (player.state == player.FALLING || player.state == player.WALKING)
       {
-	      if ((player_bottom_left.x >= plat.top_left.x && player_bottom_left.x <= plat.bottom_right.x) && (player_bottom_left.y >= plat.top_left.y && player_bottom_left.y <= plat.bottom_right.y) ||
-	            (player_bottom_right.x >= plat.top_left.x && player_bottom_right.x <= plat.bottom_right.x) && (player_bottom_right.y >= plat.top_left.y && player_bottom_right.y <= plat.bottom_right.y))
+	      if ((player.bottom_left.x >= platforms[i].hitbox.top_left.x && player.bottom_left.x <= platforms[i].hitbox.bottom_right.x) && (player.bottom_left.y >= platforms[i].hitbox.top_left.y && player.bottom_left.y <= platforms[i].hitbox.bottom_right.y) ||
+	            (player.bottom_right.x >= platforms[i].hitbox.top_left.x && player.bottom_right.x <= platforms[i].hitbox.bottom_right.x) && (player.bottom_right.y >= platforms[i].hitbox.top_left.y && player.bottom_right.y <= platforms[i].hitbox.bottom_right.y))
 	      {
 	        //player.y = plat.top_left.y - (player.height * player.scale_y);
 	        return i;
@@ -754,6 +761,79 @@ int PlayerCollidePlatforms()
   }
 
   return -1;
+}
+
+void SpawnPickup(int x, int y, int type)
+{
+  for (int i = 0; i < max_pickups; ++i)
+  {
+    if (!pickups[i].alive)
+    {
+      pickups[i].alive = true;
+      pickups[i].x = x;
+      pickups[i].y = y;
+      pickups[i].type = type;
+      pickups[i].current_frame = 0;
+      pickups[i].delay = 6;
+      pickups[i].frame_count = 0;
+      
+      switch (type)
+      {
+      case COIN:
+        pickups[i].sheet = images[6];
+        pickups[i].frames = 4;
+        break;
+      }
+
+      break;
+    }
+  }
+}
+
+void UpdatePickups()
+{
+
+}
+
+int PlayerCollidePickups()
+{
+  return -1;
+}
+
+void CollectPickup(int id)
+{
+
+}
+
+void RemovePickup(int id)
+{
+  pickups[id].alive = false;
+  al_destroy_bitmap(pickups[id].sheet);
+}
+
+void DrawPickups()
+{
+  al_set_target_bitmap(cam.screen);
+
+  for (int i = 0; i < max_pickups; ++i)
+  {
+    if (pickups[i].alive)
+    {
+      if (pickups[i].frame_count >= pickups[i].delay) //If the delay has passed
+      {
+        pickups[i].frame_count = 0; //Set counter to zero
+        ++pickups[i].current_frame; //Increment the current frame
+
+        if (pickups[i].current_frame > pickups[i].frames - 1) //if we've gone past the last frame
+          pickups[i].current_frame = 0; //Go back to the first frame
+      }
+
+      if (!paused)
+        ++pickups[i].frame_count; //Increment delay counter
+
+      al_draw_bitmap_region(pickups[i].sheet, 32 * pickups[i].current_frame, 0, 32, 32, pickups[i].x - cam.x, pickups[i].y + cam.y, 0);
+    }
+  } 
 }
 
 void UpdateBackground()
@@ -799,6 +879,7 @@ void NewGame()
   bg_offset = 0;
 
 
+
   InitCamera();
   InitPlayer();
 
@@ -814,6 +895,10 @@ void NewGame()
   SpawnPlatform(125, HEIGHT - 250, 100, 32, -1);
   SpawnPlatform(250, HEIGHT - 325, 100, 32, -1);
 
+  //Testing
+  SpawnPickup(32, HEIGHT - 175 - 32, COIN);
+  SpawnPickup(125 + 32, HEIGHT - 250 - 32, COIN);
+
   platform_spawn.y = HEIGHT - 325;
 
   new_game = false;
@@ -825,7 +910,7 @@ void Destroy()
 
   al_destroy_font(fonts[0]);
 
-  for (i = 0; i < 6; ++i)
+  for (i = 0; i < 7; ++i)
     al_destroy_bitmap(images[i]);
 
   al_destroy_bitmap(player.sprite);

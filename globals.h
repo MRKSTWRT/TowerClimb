@@ -8,6 +8,9 @@ const int HEIGHT = 600;
 //Maximum number of platforms at any one time
 const int max_platforms = 12;
 
+//Maximum number of pickups at any one time
+const int max_pickups = 6;
+
 //Keeps track of the number of platforms currently alive
 int num_platforms = 0;
 

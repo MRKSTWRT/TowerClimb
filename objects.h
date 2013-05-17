@@ -1,5 +1,16 @@
-//Object IDs
-enum IDS{PLAYER, BULLET, ENEMY};
+enum pickup_types {COIN};
+
+struct Point
+{
+  int x;
+  int y;
+};
+
+struct Rect
+{
+  Point top_left;
+  Point bottom_right;
+};
 
 //Our player
 struct Player
@@ -40,6 +51,11 @@ struct Player
   float rotation;
 
   ALLEGRO_BITMAP *sprite;
+
+  Rect hitbox;
+
+  Point bottom_left;
+  Point bottom_right;
 };
 
 struct Platform
@@ -56,19 +72,9 @@ struct Platform
 
   int position;
 
+  Rect hitbox;
+
   ALLEGRO_BITMAP *sprite;
-};
-
-struct Point
-{
-  int x;
-  int y;
-};
-
-struct Rect
-{
-  Point top_left;
-  Point bottom_right;
 };
 
 struct Camera
@@ -79,4 +85,17 @@ struct Camera
   int height;
   ALLEGRO_BITMAP *screen;
   Point last;
+};
+
+struct Pickup
+{
+  int x;
+  int y;
+  int type;
+  bool alive;
+  ALLEGRO_BITMAP *sheet;
+  int frame_count;
+  int current_frame;
+  int delay;
+  int frames;
 };
