@@ -32,7 +32,7 @@ int PlayerCollidePlatforms(); //Returns the index of the platform being collided
 
 void SpawnPickup(int x, int y, int type); //Spawns a pickup of type at x,y
 void UpdatePickups(); //Updates the pickups
-void PlayerCollidePickups(); //Checks for collisions on all the powerups currently in play, calling CollectPickup if necessary
+void PlayerCollidePickups(); //Checks for collisions on all the pickups currently in play, calling CollectPickup if necessary
 void CollectPickup(int id); //To be called when a pickup is collected, takes actions depending on pickup
 void RemovePickup(int id); //Removes the pickup from play
 void DrawPickups(); //Draws the pickups to the screen
@@ -43,6 +43,8 @@ void DrawBackground(); //Draws the background
 void DrawHUD(); //Draw the HUD
 
 void DrawPauseScreen(); //Draws the pause screen
+
+void DrawGameOverScreen(); //Draws the game over screen
 
 int Rand(int limit);
 
@@ -83,19 +85,18 @@ int main(void)
   al_install_keyboard();
   al_init_font_addon();
   al_init_ttf_addon();
+ 
+  //ALLEGRO_BITMAP *load_bitmap = al_load_bitmap("Assets/Images/Loading.png");
+  //al_clear_to_color(al_map_rgb(0,0,0));
+  //al_draw_bitmap(load_bitmap, (WIDTH / 2) - 125, 250, 0);
 
-  
 
   al_set_window_title(display, "TowerClimb");
 
   event_queue = al_create_event_queue();
   timer = al_create_timer(1.0 / FPS);
 
-  //-------Game Init
-  //--Load fonts
-  fonts[0] = al_load_font("Assets/Fonts/arial.ttf", 16, 0);
-  fonts[1] = al_load_font("Assets/Fonts/big_noodle_titling.ttf", 28, 0);
-  //--Load images
+  //Load images
   images[0] = al_load_bitmap("Assets/Images/Mario-Stand.png");
   images[1] = al_load_bitmap("Assets/Images/Mario-Run.png");
   images[2] = al_load_bitmap("Assets/Images/Mario-Skid.png");
@@ -104,7 +105,12 @@ int main(void)
   images[5] = al_load_bitmap("Assets/Images/Background.png");
   images[6] = al_load_bitmap("Assets/Images/Coin.png");
   images[7] = al_load_bitmap("Assets/Images/Heart.png");
+  images[8] = al_load_bitmap("Assets/Images/Pause.png");
   
+  //Load fonts
+  fonts[0] = al_load_font("Assets/Fonts/arial.ttf", 16, 0);
+  fonts[1] = al_load_font("Assets/Fonts/big_noodle_titling.ttf", 28, 0);
+  fonts[2] = al_load_font("Assets/Fonts/big_noodle_titling.ttf", 42, 0);
 
   al_register_event_source(event_queue, al_get_keyboard_event_source());
   al_register_event_source(event_queue, al_get_display_event_source(display));
@@ -202,6 +208,10 @@ void Update()
           paused = false;
       }
     }
+    else //Game Over!
+    {
+      
+    }
 
     //Variables used for debug, delete later
     cur_x = player.x + cam.x;
@@ -249,6 +259,9 @@ void Draw()
 
   if (paused)
     DrawPauseScreen();
+
+  if (game_over)
+    DrawGameOverScreen();
 
   al_set_target_bitmap(al_get_backbuffer(display)); //Set render target to our back buffer
   al_draw_bitmap(cam.screen, 0, 0, 0); //Draw the camera to the back buffer
@@ -909,10 +922,25 @@ void DrawHUD()
     }
   }
 }
+
 void DrawPauseScreen()
 {
   al_set_target_bitmap(cam.screen);
   al_draw_filled_rectangle(0, 0, WIDTH, HEIGHT, al_map_rgba(0,0,0,200));
+  al_draw_text(fonts[2], al_map_rgb(255,255,255), WIDTH / 2, 190, ALLEGRO_ALIGN_CENTER, "Paused");
+  al_draw_bitmap(images[8], (WIDTH / 2) - 45, 230, 0);
+}
+
+void DrawGameOverScreen()
+{
+  al_set_target_bitmap(cam.screen);
+  al_draw_filled_rectangle(0, 0, WIDTH, HEIGHT, al_map_rgba(0,0,0,game_over_fade));
+  al_draw_text(fonts[2], al_map_rgb(255,255,255), WIDTH / 2, 190, ALLEGRO_ALIGN_CENTER, "Game Over!");
+  if (game_over_fade != 200)
+  {
+    game_over_fade += 10;
+  }
+  
 }
 
 int Rand(int limit)
@@ -926,8 +954,15 @@ void NewGame()
 
   scrolling = false;
   game_over = false;
+
+  game_over_fade = 0;
+
+  paused = false;
   
   highest = 0;
+  score = 0;
+  coins = 0;
+
   bg_offset = 0;
 
 
@@ -964,8 +999,9 @@ void Destroy()
 
   al_destroy_font(fonts[0]);
   al_destroy_font(fonts[1]);
+  al_destroy_font(fonts[2]);
 
-  for (i = 0; i < 8; ++i)
+  for (i = 0; i < 9; ++i)
     al_destroy_bitmap(images[i]);
 
   al_destroy_bitmap(player.sprite);

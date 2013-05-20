@@ -83,3 +83,6 @@ int next_width;
 
 //How many pixels to offset the background when drawing
 int bg_offset = 0;
+
+//int for fading in the game over screen
+int game_over_fade = 0;
