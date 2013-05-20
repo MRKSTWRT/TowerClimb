@@ -9,7 +9,7 @@ const int HEIGHT = 600;
 const int max_platforms = 12;
 
 //Maximum number of pickups at any one time
-const int max_pickups = 6;
+const int max_pickups = 12;
 
 //Keeps track of the number of platforms currently alive
 int num_platforms = 0;
@@ -55,8 +55,13 @@ bool scrolling = false;
 //The current speed of the upward scroll
 float scroll_speed = 1;
 
-//Keeps track of the current score
+//Keeps track of the highest point reached so far
 int highest = 0;
+
+//Keeps track of the total score
+int score = 0;
+
+int coins = 0;
 
 //A bit hacky, keeps track of where zero score should be
 int zero;

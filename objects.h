@@ -98,4 +98,5 @@ struct Pickup
   int current_frame;
   int delay;
   int frames;
+  Rect hitbox;
 };

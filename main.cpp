@@ -64,15 +64,9 @@ int cam_test;
 
 int main(void)
 {
-  //Variables
-  double oldTime = 0;
-  double newTime = 0;
-  double delta = 0;
-
   //Allegro variables
   ALLEGRO_EVENT_QUEUE *event_queue = NULL;
   ALLEGRO_TIMER *timer = NULL;
-  ALLEGRO_TIMER *rand_timer = NULL;
 
   //Initialization Functions
   if(!al_init())										//initialize Allegro
@@ -100,6 +94,7 @@ int main(void)
   //-------Game Init
   //--Load fonts
   fonts[0] = al_load_font("Assets/Fonts/arial.ttf", 16, 0);
+  fonts[1] = al_load_font("Assets/Fonts/big_noodle_titling.ttf", 28, 0);
   //--Load images
   images[0] = al_load_bitmap("Assets/Images/Mario-Stand.png");
   images[1] = al_load_bitmap("Assets/Images/Mario-Run.png");
@@ -108,6 +103,7 @@ int main(void)
   images[4] = al_load_bitmap("Assets/Images/Platform2.png");
   images[5] = al_load_bitmap("Assets/Images/Background.png");
   images[6] = al_load_bitmap("Assets/Images/Coin.png");
+  images[7] = al_load_bitmap("Assets/Images/Heart.png");
   
 
   al_register_event_source(event_queue, al_get_keyboard_event_source());
@@ -165,6 +161,7 @@ void Update()
       {
         UpdateBackground();
         UpdatePlatforms();
+        UpdatePickups();
         UpdatePlayer();
 
         //Save the state of the camera to help with the fake background scrolling
@@ -180,7 +177,7 @@ void Update()
         }
         else //Else if the player reaches the threshold start scrolling
         {
-          if ((player.y + cam.y) < HEIGHT / 4)
+          if (player.y + cam.y < HEIGHT / 4)
             scrolling = true;
         }
       
@@ -188,8 +185,12 @@ void Update()
         if (highest < -(player.y - zero))
           highest = -(player.y - zero);
 
-        if (JustPressed(X))
-          dificulty += .1;
+        //Checks to see if player has fallen off the bottom (game over)
+        if (player.y + cam.y > HEIGHT + 100)
+        {
+          player.health = 0;
+          game_over = true;
+        }
 
         if (JustPressed(P))
           paused = true;
@@ -583,6 +584,8 @@ void UpdatePlayer()
       player.state = player.FALLING; //If we're not jumping and we aren't touching the ground then we must be falling
     }
   }
+
+  PlayerCollidePickups();
 }
 
 void DrawPlayer()
@@ -702,6 +705,7 @@ void UpdatePlatforms()
       if (platforms[i].y > (-cam.y + cam.height + 100))
       {
         RemovePlatform(i);
+        break;
       }
     }
     else //If platform is not alive we make use of it by spawning a new one in it's place
@@ -776,6 +780,11 @@ void SpawnPickup(int x, int y, int type)
       pickups[i].delay = 6;
       pickups[i].frame_count = 0;
       
+      pickups[i].hitbox.top_left.x = x;
+      pickups[i].hitbox.top_left.y = y;
+      pickups[i].hitbox.bottom_right.x = x + 32;
+      pickups[i].hitbox.bottom_right.y = y + 32;
+      
       switch (type)
       {
       case COIN:
@@ -791,23 +800,54 @@ void SpawnPickup(int x, int y, int type)
 
 void UpdatePickups()
 {
-
+  for (int i = 0; i < max_pickups; ++i)
+  {
+    if (pickups[i].alive)
+    {
+      if (pickups[i].y > (-cam.y + cam.height + 100))
+      {
+        RemovePickup(i);
+        break;
+      }
+    }
+  }
 }
 
 void PlayerCollidePickups()
 {
-  
+  for (int i = 0; i < max_pickups; ++i)
+  {
+    if (pickups[i].alive)
+    {
+      if (((pickups[i].hitbox.top_left.x < player.hitbox.top_left.x && pickups[i].hitbox.bottom_right.x > player.hitbox.top_left.x) ||
+          (pickups[i].hitbox.top_left.x < player.hitbox.bottom_right.x && pickups[i].hitbox.bottom_right.x > player.hitbox.top_left.x))
+          &&
+          ((pickups[i].hitbox.top_left.y < player.hitbox.top_left.y && pickups[i].hitbox.bottom_right.y > player.hitbox.top_left.y) ||
+          (pickups[i].hitbox.top_left.y < player.hitbox.bottom_right.y && pickups[i].hitbox.bottom_right.y > player.hitbox.top_left.y)))
+      {
+        CollectPickup(i);
+        break;
+      }
+    }
+  }
 }
 
 void CollectPickup(int id)
 {
+  switch(pickups[id].type)
+  {
+  case COIN:
+    score += 10;
+    coins++;
+    break;
+  }
 
+  RemovePickup(id);
 }
 
 void RemovePickup(int id)
 {
   pickups[id].alive = false;
-  al_destroy_bitmap(pickups[id].sheet);
 }
 
 void DrawPickups()
@@ -853,9 +893,22 @@ void DrawHUD()
 {
   al_set_target_bitmap(cam.screen);
 
-  al_draw_textf(fonts[0], al_map_rgb(255,0,0), 2, 2, 0, "X: %i Y: %i - Score: %i", cur_x,  cur_y, highest);
-}
 
+  al_draw_filled_rectangle(0, 0, WIDTH, 35, al_map_rgba(0,0,0,150));
+  al_draw_textf(fonts[1], al_map_rgb(255,255,255), 3, 3, 0, "Score: %i", (highest / 2) + score);
+
+  for (int i = 0; i < 3; ++i)
+  {
+    if (player.health >= i + 1)
+    {
+      al_draw_bitmap_region(images[7], 32, 0, 32, 32, (WIDTH - (i * 35)) - 35, 3, 0);
+    }
+    else
+    {
+      al_draw_bitmap_region(images[7], 0, 0, 32, 32, (WIDTH - (i * 35)) - 35, 3, 0);
+    }
+  }
+}
 void DrawPauseScreen()
 {
   al_set_target_bitmap(cam.screen);
@@ -884,9 +937,11 @@ void NewGame()
 
   //Remove all platforms
   for (i = 0; i < max_platforms; ++i)
-  {
     RemovePlatform(i);
-  }
+
+  //Remove all pickups
+  for (i = 0; i < max_pickups; ++i)
+    RemovePickup(i);
 
   //Spawn the starting platforms
   SpawnPlatform(0, HEIGHT - 25, WIDTH, 32, -1);
@@ -895,8 +950,8 @@ void NewGame()
   SpawnPlatform(250, HEIGHT - 325, 100, 32, -1);
 
   //Testing
-  SpawnPickup(32, HEIGHT - 175 - 32, COIN);
-  SpawnPickup(125 + 32, HEIGHT - 250 - 32, COIN);
+  SpawnPickup(32, HEIGHT - 175 - 32 - 16, COIN);
+  SpawnPickup(125 + 32, HEIGHT - 250 - 32 - 16, COIN);
 
   platform_spawn.y = HEIGHT - 325;
 
@@ -908,8 +963,9 @@ void Destroy()
   int i;
 
   al_destroy_font(fonts[0]);
+  al_destroy_font(fonts[1]);
 
-  for (i = 0; i < 7; ++i)
+  for (i = 0; i < 8; ++i)
     al_destroy_bitmap(images[i]);
 
   al_destroy_bitmap(player.sprite);
