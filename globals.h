@@ -69,6 +69,9 @@ int zero;
 //Keeps track of the dificulty, increase this to make the game wait longer before spawning a new platform
 float dificulty = 1;
 
+//Max dificulty, make sure player can always make the jumps
+float max_dificulty = 2.7;
+
 //The minimum amount of space between each platform
 int platform_increment = 96;
 

@@ -193,10 +193,20 @@ void Update()
 
         //Checks to see if player has fallen off the bottom (game over)
         if (player.y + cam.y > HEIGHT + 100)
-        {
           player.health = 0;
+
+        if (player.health == 0)
           game_over = true;
+
+        if (dificulty < max_dificulty)
+        {
+          dificulty = float(float(float(float(highest / 2)) / 1000) / 10) + 1;
         }
+        else
+        {
+          dificulty = max_dificulty;
+        }
+
 
         if (JustPressed(P))
           paused = true;
@@ -908,7 +918,7 @@ void DrawHUD()
 
 
   al_draw_filled_rectangle(0, 0, WIDTH, 35, al_map_rgba(0,0,0,150));
-  al_draw_textf(fonts[1], al_map_rgb(255,255,255), 3, 3, 0, "Score: %i", (highest / 2) + score);
+  al_draw_textf(fonts[1], al_map_rgb(255,255,255), 3, 3, 0, "Score: %i Difficulty: %f", (highest / 2) + score, dificulty);
 
   for (int i = 0; i < 3; ++i)
   {
@@ -962,6 +972,7 @@ void NewGame()
   highest = 0;
   score = 0;
   coins = 0;
+  dificulty = 1;
 
   bg_offset = 0;
 
