@@ -55,6 +55,9 @@ bool scrolling = false;
 //The current speed of the upward scroll
 float scroll_speed = 1;
 
+//The maximum possible scroll speed
+float max_scroll_speed = 5;
+
 //Keeps track of the highest point reached so far
 int highest = 0;
 
@@ -70,7 +73,7 @@ int zero;
 float dificulty = 1;
 
 //Max dificulty, make sure player can always make the jumps
-float max_dificulty = 2.7;
+float max_dificulty = 2;
 
 //The minimum amount of space between each platform
 int platform_increment = 96;
@@ -89,3 +92,7 @@ int bg_offset = 0;
 
 //int for fading in the game over screen
 int game_over_fade = 0;
+int game_over_fade_2 = 0;
+
+//Probability of a pickup being spawned
+int pickup_chance;

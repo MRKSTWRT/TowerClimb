@@ -174,7 +174,7 @@ void Update()
         cam.last.x = cam.x;
         cam.last.y = cam.y;
 
-        if ((player.y + cam.y) < HEIGHT / 4)
+        if ((player.y + cam.y) < HEIGHT / 4 && scroll_speed < 3)
           cam.y += 3;
       
         if (scrolling)//If the scrolling has started then move the cam by scroll_speed;
@@ -207,6 +207,17 @@ void Update()
           dificulty = max_dificulty;
         }
 
+        if (scroll_speed < max_scroll_speed)
+        {
+          scroll_speed = float(float(float(float(highest / 2)) / 1000) / 2) + 1;
+        }
+        else
+        {
+          scroll_speed = max_scroll_speed;
+        }
+
+        if (JustPressed(X))
+          game_over = true;
 
         if (JustPressed(P))
           paused = true;
@@ -387,7 +398,7 @@ void InitPlayer()
 
   player.gravity = 8;
   player.y_velocity = player.gravity;
-  player.jump_power = 24;
+  player.jump_power = 20;
 
   player.health = 3;
 
@@ -711,6 +722,11 @@ void SpawnPlatform(int x, int y, int width, int height, int id)
       }
 
       num_platforms++;
+
+      if (Rand(100) <= pickup_chance)
+      {
+        SpawnPickup((x + (width / 2)) - 18, y - 50, COIN);
+      }
     }
   }
 }
@@ -918,7 +934,7 @@ void DrawHUD()
 
 
   al_draw_filled_rectangle(0, 0, WIDTH, 35, al_map_rgba(0,0,0,150));
-  al_draw_textf(fonts[1], al_map_rgb(255,255,255), 3, 3, 0, "Score: %i Difficulty: %f", (highest / 2) + score, dificulty);
+  al_draw_textf(fonts[1], al_map_rgb(255,255,255), 3, 3, 0, "Score: %i", (highest / 2) + score);
 
   for (int i = 0; i < 3; ++i)
   {
@@ -945,10 +961,16 @@ void DrawGameOverScreen()
 {
   al_set_target_bitmap(cam.screen);
   al_draw_filled_rectangle(0, 0, WIDTH, HEIGHT, al_map_rgba(0,0,0,game_over_fade));
-  al_draw_text(fonts[2], al_map_rgb(255,255,255), WIDTH / 2, 190, ALLEGRO_ALIGN_CENTER, "Game Over!");
-  if (game_over_fade != 200)
+
+  if (game_over_fade < 200)
   {
     game_over_fade += 10;
+  }
+  else
+  {
+    al_draw_text(fonts[2], al_map_rgb(255,255,255), WIDTH / 2, 190, ALLEGRO_ALIGN_CENTER, "Game Over!");
+
+    al_draw_line(130, 240, 272, 240, al_map_rgb(255,0,0), 2);
   }
   
 }
@@ -966,6 +988,7 @@ void NewGame()
   game_over = false;
 
   game_over_fade = 0;
+  game_over_fade_2 = 0;
 
   paused = false;
   
@@ -975,6 +998,8 @@ void NewGame()
   dificulty = 1;
 
   bg_offset = 0;
+
+  pickup_chance = 33;
 
 
 
