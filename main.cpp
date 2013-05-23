@@ -111,6 +111,7 @@ int main(void)
   fonts[0] = al_load_font("Assets/Fonts/arial.ttf", 16, 0);
   fonts[1] = al_load_font("Assets/Fonts/big_noodle_titling.ttf", 28, 0);
   fonts[2] = al_load_font("Assets/Fonts/big_noodle_titling.ttf", 42, 0);
+  fonts[3] = al_load_font("Assets/Fonts/big_noodle_titling.ttf", 58, 0);
 
   al_register_event_source(event_queue, al_get_keyboard_event_source());
   al_register_event_source(event_queue, al_get_display_event_source(display));
@@ -231,7 +232,73 @@ void Update()
     }
     else //Game Over!
     {
-      
+      if (submit_score)
+      {
+        if (!name_entered)
+        {
+          if (JustPressed(LEFT))
+          {
+            if (submit_selection == 0)
+            {
+              submit_selection = 2;
+            }
+            else
+            {
+              --submit_selection;
+            }
+          }
+
+          if (JustPressed(RIGHT))
+          {
+            if (submit_selection == 2)
+            {
+              submit_selection = 0;
+            }
+            else
+            {
+              ++submit_selection;
+            }
+          }
+
+          if (JustPressed(UP))
+          {
+            if (score_name[submit_selection] == num_chars - 2)
+            {
+              score_name[submit_selection] = 0;
+            }
+            else
+            {
+              ++score_name[submit_selection];
+            }
+          }
+
+          if (JustPressed(DOWN))
+          {
+            if (score_name[submit_selection] == 0)
+            {
+              score_name[submit_selection] = num_chars - 2;
+            }
+            else
+            {
+              --score_name[submit_selection];
+            }
+          }
+
+          if (JustPressed(ENTER))
+            name_entered = true;
+        }
+        else //Name inputted, submit the score!
+        {
+          //TODO: Actually submit the score :P
+          new_game = true;
+        }
+
+      }
+      else
+      {
+        if (JustPressed(S))
+          submit_score = true;
+      }
     }
 
     //Variables used for debug, delete later
@@ -322,6 +389,12 @@ void CheckKeys(ALLEGRO_EVENT &ev, bool pressed)
     case ALLEGRO_KEY_P:
       keys[P] = true;
       break;
+    case ALLEGRO_KEY_S:
+      keys[S] = true;
+      break;
+    case ALLEGRO_KEY_ENTER:
+      keys[ENTER] = true;
+      break;
     }
   }
   else
@@ -351,6 +424,12 @@ void CheckKeys(ALLEGRO_EVENT &ev, bool pressed)
       break;
     case ALLEGRO_KEY_P:
       keys[P] = false;
+      break;
+    case ALLEGRO_KEY_S:
+      keys[S] = false;
+      break;
+    case ALLEGRO_KEY_ENTER:
+      keys[ENTER] = false;
       break;
     }
   }
@@ -636,7 +715,7 @@ void DrawPlayer()
       player.current_frame = 0; //Go back to the first frame
   }
   
-  if (!paused)
+  if (!paused && !game_over)
     ++player.frame_count; //Increment delay counter
 
   if (player.facing == player.RIGHT)
@@ -906,7 +985,7 @@ void DrawPickups()
           pickups[i].current_frame = 0; //Go back to the first frame
       }
 
-      if (!paused)
+      if (!paused && !game_over)
         ++pickups[i].frame_count; //Increment delay counter
 
       al_draw_bitmap_region(pickups[i].sheet, 32 * pickups[i].current_frame, 0, 32, 32, pickups[i].x - cam.x, pickups[i].y + cam.y, 0);
@@ -962,17 +1041,39 @@ void DrawGameOverScreen()
   al_set_target_bitmap(cam.screen);
   al_draw_filled_rectangle(0, 0, WIDTH, HEIGHT, al_map_rgba(0,0,0,game_over_fade));
 
-  if (game_over_fade < 200)
+  if (!submit_score)
   {
-    game_over_fade += 10;
+	  if (game_over_fade < 200)
+	  {
+	    game_over_fade += 10;
+	  }
+	  else
+	  {
+	    al_draw_text(fonts[2], al_map_rgb(255,255,255), WIDTH / 2, 190, ALLEGRO_ALIGN_CENTER, "Game Over!");
+	    al_draw_line(130, 240, 272, 240, al_map_rgb(255,0,0), 2);
+	    al_draw_text(fonts[1], al_map_rgb(255,255,255), WIDTH / 2, 245, ALLEGRO_ALIGN_RIGHT, "Distance Climbed:");
+	    al_draw_textf(fonts[1], al_map_rgb(255,255,255), WIDTH / 2, 245, ALLEGRO_ALIGN_LEFT, "  %i pixels", highest);
+	    al_draw_text(fonts[1], al_map_rgb(255,255,255), WIDTH / 2, 275, ALLEGRO_ALIGN_RIGHT, "Coins Collected:");
+	    al_draw_textf(fonts[1], al_map_rgb(255,255,255), WIDTH / 2, 275, ALLEGRO_ALIGN_LEFT, "  %i", coins);
+	    al_draw_text(fonts[1], al_map_rgb(255,255,255), WIDTH / 2, 305, ALLEGRO_ALIGN_RIGHT, "Total Score:");
+	    al_draw_textf(fonts[1], al_map_rgb(255,255,255), WIDTH / 2, 305, ALLEGRO_ALIGN_LEFT, "  %i", (highest / 2) + score);
+	    al_draw_text(fonts[1], al_map_rgb(255,0,0), WIDTH / 2, 355, ALLEGRO_ALIGN_CENTER, "Press S to submit your score");
+	    al_draw_text(fonts[1], al_map_rgb(255,0,0), WIDTH / 2, 385, ALLEGRO_ALIGN_CENTER, "Press R to have another go");
+	  }
   }
   else
   {
-    al_draw_text(fonts[2], al_map_rgb(255,255,255), WIDTH / 2, 190, ALLEGRO_ALIGN_CENTER, "Game Over!");
+    al_draw_text(fonts[1], al_map_rgb(255,255,255), WIDTH / 2, 145, ALLEGRO_ALIGN_CENTER, "Use the arrow keys to enter your initials");
 
-    al_draw_line(130, 240, 272, 240, al_map_rgb(255,0,0), 2);
+    al_draw_textf(fonts[3], al_map_rgb(255,255,255), 167, 200, ALLEGRO_ALIGN_CENTER, "%c", name_chars[score_name[0]]);
+    al_draw_textf(fonts[3], al_map_rgb(255,255,255), 198, 200, ALLEGRO_ALIGN_CENTER, "%c", name_chars[score_name[1]]);
+    al_draw_textf(fonts[3], al_map_rgb(255,255,255), 229, 200, ALLEGRO_ALIGN_CENTER, "%c", name_chars[score_name[2]]);
+
+    al_draw_filled_triangle(154 + (submit_selection * 31), 202, 180 + (submit_selection * 31), 202, 167 + (submit_selection * 31), 188, al_map_rgb(255,255,255));
+    al_draw_filled_triangle(154 + (submit_selection * 31), 260, 180 + (submit_selection * 31), 260, 167 + (submit_selection * 31), 274, al_map_rgb(255,255,255));
+
+    al_draw_text(fonts[1], al_map_rgb(255,255,255), WIDTH / 2, 290, ALLEGRO_ALIGN_CENTER, "Hit the enter key to submit");
   }
-  
 }
 
 int Rand(int limit)
@@ -989,6 +1090,14 @@ void NewGame()
 
   game_over_fade = 0;
   game_over_fade_2 = 0;
+
+  submit_score = false;
+  name_entered = false;
+
+  submit_selection = 0;
+  score_name[0] = 0;
+  score_name[1] = 0;
+  score_name[2] = 0;
 
   paused = false;
   
@@ -1020,10 +1129,6 @@ void NewGame()
   SpawnPlatform(125, HEIGHT - 250, 100, 32, -1);
   SpawnPlatform(250, HEIGHT - 325, 100, 32, -1);
 
-  //Testing
-  SpawnPickup(32, HEIGHT - 175 - 32 - 16, COIN);
-  SpawnPickup(125 + 32, HEIGHT - 250 - 32 - 16, COIN);
-
   platform_spawn.y = HEIGHT - 325;
 
   new_game = false;
@@ -1036,6 +1141,7 @@ void Destroy()
   al_destroy_font(fonts[0]);
   al_destroy_font(fonts[1]);
   al_destroy_font(fonts[2]);
+  al_destroy_font(fonts[3]);
 
   for (i = 0; i < 9; ++i)
     al_destroy_bitmap(images[i]);

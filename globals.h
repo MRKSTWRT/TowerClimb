@@ -11,6 +11,12 @@ const int max_platforms = 12;
 //Maximum number of pickups at any one time
 const int max_pickups = 12;
 
+//Number of characters available for saving highscore names
+const int num_chars = 28;
+
+//Array of characters for saving highscore names
+const char name_chars[num_chars] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ.";
+
 //Keeps track of the number of platforms currently alive
 int num_platforms = 0;
 
@@ -21,10 +27,10 @@ bool done = false;
 bool redraw = true;
 
 //Keeps track of the pressed state of each key, true means key is down
-enum KEYS{UP, DOWN, LEFT, RIGHT, X, Z, R, P};
-const int num_keys = 8;
-bool keys[num_keys] = {false, false, false, false, false, false, false, false};
-bool old_keys[num_keys] = {false, false, false, false, false, false, false, false};
+enum KEYS{UP, DOWN, LEFT, RIGHT, X, Z, R, P, S, ENTER};
+const int num_keys = 10;
+bool keys[num_keys] = {false, false, false, false, false, false, false, false, false, false};
+bool old_keys[num_keys] = {false, false, false, false, false, false, false, false, false, false};
 
 //Keeps track of the state, changing current_state will switch the state.
 enum STATES{GAME, MENU};
@@ -96,3 +102,15 @@ int game_over_fade_2 = 0;
 
 //Probability of a pickup being spawned
 int pickup_chance;
+
+//True when the user chooses to submit highscore
+bool submit_score = false;
+
+//True after a name has been entered
+bool name_entered = false;
+
+//The current letter to change in the highscore name
+int submit_selection = 0;
+
+//Character selection for name
+int score_name[] = {0,0,0};
