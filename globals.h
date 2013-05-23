@@ -114,3 +114,10 @@ int submit_selection = 0;
 
 //Character selection for name
 int score_name[] = {0,0,0};
+
+//Number of stars collected
+int stars = 0;
+
+bool allow_double_jump = false;
+
+bool has_double_jumped = false;

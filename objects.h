@@ -1,4 +1,4 @@
-enum pickup_types {COIN};
+enum pickup_types {COIN, STAR};
 
 struct Point
 {
@@ -39,7 +39,7 @@ struct Player
   enum directions{LEFT, RIGHT};
   
   
-  ALLEGRO_BITMAP *sheet[4];
+  ALLEGRO_BITMAP *sheet[7];
   int frames[4];
 
   int current_animation;

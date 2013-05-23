@@ -106,12 +106,14 @@ int main(void)
   images[6] = al_load_bitmap("Assets/Images/Coin.png");
   images[7] = al_load_bitmap("Assets/Images/Heart.png");
   images[8] = al_load_bitmap("Assets/Images/Pause.png");
+  images[9] = al_load_bitmap("Assets/Images/Star.png");
   
   //Load fonts
   fonts[0] = al_load_font("Assets/Fonts/arial.ttf", 16, 0);
   fonts[1] = al_load_font("Assets/Fonts/big_noodle_titling.ttf", 28, 0);
   fonts[2] = al_load_font("Assets/Fonts/big_noodle_titling.ttf", 42, 0);
   fonts[3] = al_load_font("Assets/Fonts/big_noodle_titling.ttf", 58, 0);
+  fonts[4] = al_load_font("Assets/Fonts/big_noodle_titling.ttf", 20, 0);
 
   al_register_event_source(event_queue, al_get_keyboard_event_source());
   al_register_event_source(event_queue, al_get_display_event_source(display));
@@ -217,11 +219,11 @@ void Update()
           scroll_speed = max_scroll_speed;
         }
 
-        if (JustPressed(X))
-          game_over = true;
-
         if (JustPressed(P))
           paused = true;
+
+        if (JustPressed(X))
+          SpawnPickup(player.x, player.y - 50, STAR);
       
       }
       else //Game is paused, update pause screen
@@ -491,6 +493,13 @@ void InitPlayer()
   player.frames[2] = 1;
   player.sheet[3] = images[3];
   player.frames[3] = 1;
+  player.sheet[4] = images[9];
+  player.frames[4] = 1;
+  player.sheet[5] = images[10];
+  player.frames[5] = 1;
+  player.sheet[6] = images[11];
+  player.frames[6] = 1;
+  
 
   player.current_frame = 0;
   player.current_animation = player.STAND;
@@ -644,9 +653,12 @@ void UpdatePlayer()
       }
     }
   
-  if (player.state == player.JUMPING && !JustPressed(X))
+  if (player.state == player.JUMPING && !JustPressed(UP))
   {
     ChangePlayerAnimation(player.JUMP, false);
+
+    allow_double_jump = true;
+
     if (player.y_velocity < player.gravity)
     {
       player.y_velocity += 1;
@@ -688,6 +700,8 @@ void UpdatePlayer()
   {
     player.state = player.WALKING; //Change player state to walking
     player.y_velocity = 0; //Kill the downward velocity
+    allow_double_jump = false;
+    has_double_jumped = false;
     player.y = platforms[PlayerCollidePlatforms()].y - (player.height * player.scale_y); //Make sure the player hasn't sunk into the platform
   }
   else
@@ -695,6 +709,15 @@ void UpdatePlayer()
     if (player.state != player.JUMPING)
     {
       player.state = player.FALLING; //If we're not jumping and we aren't touching the ground then we must be falling
+    }
+
+    if (JustPressed(UP) && stars > 0 && allow_double_jump && !has_double_jumped)
+    {
+      player.state = player.JUMPING;
+      player.y_velocity = -player.jump_power;
+      --stars;
+      allow_double_jump = false;
+      has_double_jumped = true;
     }
   }
 
@@ -909,6 +932,10 @@ void SpawnPickup(int x, int y, int type)
         pickups[i].sheet = images[6];
         pickups[i].frames = 4;
         break;
+      case STAR:
+        pickups[i].sheet = images[9];
+        pickups[i].frames = 4;
+        break;
       }
 
       break;
@@ -957,6 +984,9 @@ void CollectPickup(int id)
   case COIN:
     score += 10;
     coins++;
+    break;
+  case STAR:
+    stars++;
     break;
   }
 
@@ -1014,6 +1044,10 @@ void DrawHUD()
 
   al_draw_filled_rectangle(0, 0, WIDTH, 35, al_map_rgba(0,0,0,150));
   al_draw_textf(fonts[1], al_map_rgb(255,255,255), 3, 3, 0, "Score: %i", (highest / 2) + score);
+
+  al_draw_bitmap_region(images[9], 0, 0, 32, 32, (WIDTH / 2) - 35, 3, 0);
+  al_draw_text(fonts[4], al_map_rgb(255,255,255), (WIDTH / 2), 10, ALLEGRO_ALIGN_LEFT, "x");
+  al_draw_textf(fonts[1], al_map_rgb(255,255,255), (WIDTH / 2) + 12, 5, ALLEGRO_ALIGN_LEFT, "%i", stars);
 
   for (int i = 0; i < 3; ++i)
   {
@@ -1142,8 +1176,9 @@ void Destroy()
   al_destroy_font(fonts[1]);
   al_destroy_font(fonts[2]);
   al_destroy_font(fonts[3]);
+  al_destroy_font(fonts[4]);
 
-  for (i = 0; i < 9; ++i)
+  for (i = 0; i < 10; ++i)
     al_destroy_bitmap(images[i]);
 
   al_destroy_bitmap(player.sprite);
