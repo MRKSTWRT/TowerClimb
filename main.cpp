@@ -1,11 +1,12 @@
 #include <iostream>
-#include <fstream>
 
-#include <allegro5\allegro.h>
-#include <allegro5\allegro_primitives.h>
-#include <allegro5\allegro_font.h>
-#include <allegro5\allegro_ttf.h>
-#include <allegro5\allegro_image.h>
+#include <Allegro5\allegro.h>
+#include <Allegro5\allegro_primitives.h>
+#include <Allegro5\allegro_font.h>
+#include <Allegro5\allegro_ttf.h>
+#include <Allegro5\allegro_image.h>
+#include <Allegro5\allegro_audio.h>
+#include <Allegro5\allegro_acodec.h>
 
 #include "objects.h"
 #include "globals.h"
@@ -13,7 +14,7 @@
 
 using namespace std;
 
-//prototypes
+
 void Update(); //Update the current game state, once every frame
 void Draw(); //Handles all of the drawing on screen, after Update
 void CheckKeys(ALLEGRO_EVENT &ev, bool pressed); //Checks the current up/down state of each key in the keys array
@@ -82,6 +83,15 @@ int main(void)
   al_install_keyboard();
   al_init_font_addon();
   al_init_ttf_addon();
+  al_install_audio();
+  al_init_acodec_addon();
+
+  ALLEGRO_BITMAP *load_bitmap = al_load_bitmap("Assets/Images/Loading.png");
+  al_clear_to_color(al_map_rgb(0,0,0));
+  al_draw_bitmap(load_bitmap, (WIDTH / 2) - 125, 250, 0);
+  al_flip_display();
+
+  al_destroy_bitmap(load_bitmap);
 
 
   al_set_window_title(display, "TowerClimb");
@@ -109,6 +119,21 @@ int main(void)
   fonts[2] = al_load_font("Assets/Fonts/big_noodle_titling.ttf", 42, 0);
   fonts[3] = al_load_font("Assets/Fonts/big_noodle_titling.ttf", 58, 0);
   fonts[4] = al_load_font("Assets/Fonts/big_noodle_titling.ttf", 20, 0);
+
+  //Load sounds
+  al_reserve_samples(10);
+  sounds[0] = al_load_sample("Assets/Audio/coin.wav");
+  sounds[1] = al_load_sample("Assets/Audio/star.wav");
+  sounds[2] = al_load_sample("Assets/Audio/mariodie.wav");
+  sounds[3] = al_load_sample("Assets/Audio/jump.wav");
+  sounds[4] = al_load_sample("Assets/Audio/doublejump.wav");
+  sounds[5] = al_load_sample("Assets/Audio/pause.wav");
+  sounds[6] = al_load_sample("Assets/Audio/song.ogg");
+  song_instance = al_create_sample_instance(sounds[6]);
+  al_set_sample_instance_playmode(song_instance, ALLEGRO_PLAYMODE_LOOP);
+  al_attach_sample_instance_to_mixer(song_instance, al_get_default_mixer());
+
+
 
   al_register_event_source(event_queue, al_get_keyboard_event_source());
   al_register_event_source(event_queue, al_get_display_event_source(display));
@@ -159,12 +184,20 @@ void Update()
   if (current_state == GAME)
   {
     if (new_game)
+    {
       NewGame();
+    }
 
     if (!game_over)
     {
       if (!paused)
       {
+        if (play_song)
+        {
+          al_play_sample_instance(song_instance);
+          play_song = false;
+        }
+
         UpdateBackground();
         UpdatePlatforms();
         UpdatePickups();
@@ -221,12 +254,24 @@ void Update()
       }
       else //Game is paused, update pause screen
       {
+        al_stop_sample_instance(song_instance);
+
         if (JustPressed(P))
+        {
+          play_song = true;
           paused = false;
+        }
       }
     }
     else //Game Over!
     {
+      al_stop_sample_instance(song_instance);
+      if (play_death)
+      {
+        al_play_sample(sounds[2], 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, 0);
+        play_death = false;
+      }
+
       if (submit_score)
       {
         if (!name_entered)
@@ -303,6 +348,8 @@ void Update()
   }
   else if (current_state == MENU)
   {
+    al_stop_sample_instance(song_instance);
+
     if (JustPressed(UP))
     {
       if (menu_selection == 0)
@@ -332,6 +379,7 @@ void Update()
       switch (menu_selection)
       {
       case 0:
+        play_song = true;
         NewGame();
         current_state = GAME;
         break;
@@ -346,7 +394,7 @@ void Update()
   }
   else if (current_state == INSTRUCTIONS)
   {
-
+    al_stop_sample_instance(song_instance);
   }
 
 
@@ -599,6 +647,7 @@ void UpdatePlayer()
     {
       player.state = player.JUMPING;
       player.y_velocity = -player.jump_power;
+      al_play_sample(sounds[3], 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, 0);
     }
   }
 
@@ -769,6 +818,7 @@ void UpdatePlayer()
       --stars;
       allow_double_jump = false;
       has_double_jumped = true;
+      al_play_sample(sounds[4], 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, 0);
     }
   }
 
@@ -1041,9 +1091,11 @@ void CollectPickup(int id)
   case COIN:
     score += 10;
     coins++;
+    al_play_sample(sounds[0], 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, 0);
     break;
   case STAR:
     stars++;
+    al_play_sample(sounds[1], 1, 0, 1, ALLEGRO_PLAYMODE_ONCE, 0);
     break;
   }
 
@@ -1106,7 +1158,7 @@ void DrawHUD()
   al_draw_text(fonts[4], al_map_rgb(255,255,255), (WIDTH / 2), 10, ALLEGRO_ALIGN_LEFT, "x");
   al_draw_textf(fonts[1], al_map_rgb(255,255,255), (WIDTH / 2) + 12, 5, ALLEGRO_ALIGN_LEFT, "%i", stars);
 
-  for (int i = 0; i < 3; ++i)
+  /*for (int i = 0; i < 3; ++i)
   {
     if (player.health >= i + 1)
     {
@@ -1116,7 +1168,7 @@ void DrawHUD()
     {
       al_draw_bitmap_region(images[7], 0, 0, 32, 32, (WIDTH - (i * 35)) - 35, 3, 0);
     }
-  }
+  }*/
 }
 
 void DrawPauseScreen()
@@ -1202,6 +1254,8 @@ void NewGame()
   coin_chance = 33;
   star_chance = 5;
 
+  play_death = true;
+
 
   InitCamera();
   InitPlayer();
@@ -1235,8 +1289,11 @@ void Destroy()
   al_destroy_font(fonts[3]);
   al_destroy_font(fonts[4]);
 
-  for (i = 0; i < 1; ++i)
+  for (i = 0; i < 12; ++i)
     al_destroy_bitmap(images[i]);
+
+  for (i = 0; i < 7; ++i)
+    al_destroy_sample(sounds[i]);
 
   al_destroy_bitmap(player.sprite);
   al_destroy_bitmap(cam.screen);

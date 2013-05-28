@@ -46,6 +46,9 @@ int skips = 0;
 //The allegro_display
 ALLEGRO_DISPLAY *display = NULL;
 
+//Sample instance for theme tune
+ALLEGRO_SAMPLE_INSTANCE *song_instance = NULL;
+
 //Keeps track of if the game is paused or not
 bool paused = false;
 
@@ -125,3 +128,6 @@ bool allow_double_jump = false;
 bool has_double_jumped = false;
 
 int menu_selection = 0;
+
+bool play_song = false;
+bool play_death = true;
