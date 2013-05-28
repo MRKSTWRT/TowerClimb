@@ -100,3 +100,16 @@ struct Pickup
   int frames;
   Rect hitbox;
 };
+
+struct Enemy
+{
+  int x;
+  int y;
+  bool alive;
+  ALLEGRO_BITMAP *sheet;
+  int frame_count;
+  int current_frame;
+  int delay;
+  int frames;
+  Rect hitbox;
+};

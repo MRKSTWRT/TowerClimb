@@ -33,8 +33,8 @@ bool keys[num_keys] = {false, false, false, false, false, false, false, false, f
 bool old_keys[num_keys] = {false, false, false, false, false, false, false, false, false, false};
 
 //Keeps track of the state, changing current_state will switch the state.
-enum STATES{GAME, MENU};
-int current_state = GAME;
+enum STATES{GAME, MENU, INSTRUCTIONS};
+int current_state = MENU;
 
 //Used for the FPS counter
 float game_time = 0;
@@ -101,7 +101,9 @@ int game_over_fade = 0;
 int game_over_fade_2 = 0;
 
 //Probability of a pickup being spawned
-int pickup_chance;
+int coin_chance;
+
+int star_chance;
 
 //True when the user chooses to submit highscore
 bool submit_score = false;
@@ -121,3 +123,5 @@ int stars = 0;
 bool allow_double_jump = false;
 
 bool has_double_jumped = false;
+
+int menu_selection = 0;

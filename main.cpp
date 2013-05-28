@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 
 #include <allegro5\allegro.h>
 #include <allegro5\allegro_primitives.h>
@@ -9,6 +10,8 @@
 #include "objects.h"
 #include "globals.h"
 #include "assets.h"
+
+using namespace std;
 
 //prototypes
 void Update(); //Update the current game state, once every frame
@@ -58,12 +61,6 @@ Platform platforms[max_platforms]; //Array containing all of the platforms
 Pickup pickups[max_pickups]; //Array containing all the pickups
 Camera cam; //The camera object for rendering the correct part of the screen
 
-
-//Debug vars
-int cur_x;
-int cur_y;
-int cam_test;
-
 int main(void)
 {
   //Allegro variables
@@ -85,10 +82,6 @@ int main(void)
   al_install_keyboard();
   al_init_font_addon();
   al_init_ttf_addon();
- 
-  //ALLEGRO_BITMAP *load_bitmap = al_load_bitmap("Assets/Images/Loading.png");
-  //al_clear_to_color(al_map_rgb(0,0,0));
-  //al_draw_bitmap(load_bitmap, (WIDTH / 2) - 125, 250, 0);
 
 
   al_set_window_title(display, "TowerClimb");
@@ -107,6 +100,8 @@ int main(void)
   images[7] = al_load_bitmap("Assets/Images/Heart.png");
   images[8] = al_load_bitmap("Assets/Images/Pause.png");
   images[9] = al_load_bitmap("Assets/Images/Star.png");
+  images[10] = al_load_bitmap("Assets/Images/Instructions.png");
+  images[11] = al_load_bitmap("Assets/Images/Title.png");
   
   //Load fonts
   fonts[0] = al_load_font("Assets/Fonts/arial.ttf", 16, 0);
@@ -120,6 +115,8 @@ int main(void)
   al_register_event_source(event_queue, al_get_timer_event_source(timer));
 
   al_start_timer(timer);
+
+  NewGame();
 
   while(!done)
   {
@@ -220,11 +217,7 @@ void Update()
         }
 
         if (JustPressed(P))
-          paused = true;
-
-        if (JustPressed(X))
-          SpawnPickup(player.x, player.y - 50, STAR);
-      
+          paused = true;      
       }
       else //Game is paused, update pause screen
       {
@@ -298,14 +291,10 @@ void Update()
       }
       else
       {
-        if (JustPressed(S))
-          submit_score = true;
+        /*if (JustPressed(S))
+          submit_score = true;*/
       }
     }
-
-    //Variables used for debug, delete later
-    cur_x = player.x + cam.x;
-    cur_y = player.y + cam.y;
 
     if (JustPressed(R))
     {
@@ -314,8 +303,52 @@ void Update()
   }
   else if (current_state == MENU)
   {
-    
+    if (JustPressed(UP))
+    {
+      if (menu_selection == 0)
+      {
+        menu_selection = 2;
+      }
+      else
+      {
+        menu_selection--;
+      }
+    }
+
+    if (JustPressed(DOWN))
+    {
+      if (menu_selection == 2)
+      {
+        menu_selection = 0;
+      }
+      else
+      {
+        menu_selection++;
+      }
+    }
+
+    if (JustPressed(ENTER))
+    {
+      switch (menu_selection)
+      {
+      case 0:
+        NewGame();
+        current_state = GAME;
+        break;
+      case 1:
+        current_state = INSTRUCTIONS;
+        break;
+      case 2:
+        done = true;
+        break;
+      }
+    }
   }
+  else if (current_state == INSTRUCTIONS)
+  {
+
+  }
+
 
   //Updates the current working fps
   frames++;
@@ -340,18 +373,36 @@ void Draw()
   al_set_target_bitmap(cam.screen); //Sets the render target to our camera bitmap
   al_clear_to_color(al_map_rgb(0,0,0)); //Clears the screen to black
   
-  //Run individual drawing functions
-  DrawBackground();
-  DrawPlatforms();
-  DrawPickups();
-  DrawPlayer();
-  DrawHUD();
 
-  if (paused)
-    DrawPauseScreen();
+  if (current_state == GAME)
+  {
+    //Run individual drawing functions
+    DrawBackground();
+    DrawPlatforms();
+    DrawPickups();
+    DrawPlayer();
+    DrawHUD();
 
-  if (game_over)
-    DrawGameOverScreen();
+    if (paused)
+      DrawPauseScreen();
+
+    if (game_over)
+      DrawGameOverScreen();
+  }
+  else if (current_state == MENU)
+  {
+    al_draw_bitmap(images[11], 0, 0, 0);
+
+    al_draw_text(fonts[1], al_map_rgb(255,255,255), 25, 5, 0, "Start");
+    al_draw_text(fonts[1], al_map_rgb(255,255,255), 25, 35, 0, "Instructions");
+    al_draw_text(fonts[1], al_map_rgb(255,255,255), 25, 65, 0, "Exit");
+
+    al_draw_filled_triangle(2, 10 + (30 * menu_selection), 2, 30 + (30 * menu_selection), 22, 20 + (30 * menu_selection), al_map_rgb(255,255,255));
+  }
+  else if (current_state == INSTRUCTIONS)
+  {
+    al_draw_bitmap(images[10], 0, 0, 0);
+  }
 
   al_set_target_bitmap(al_get_backbuffer(display)); //Set render target to our back buffer
   al_draw_bitmap(cam.screen, 0, 0, 0); //Draw the camera to the back buffer
@@ -365,7 +416,7 @@ void CheckKeys(ALLEGRO_EVENT &ev, bool pressed)
     switch(ev.keyboard.keycode)
     {
     case ALLEGRO_KEY_ESCAPE:
-      done = true;
+      current_state = MENU;
       break;
     case ALLEGRO_KEY_UP:
       keys[UP] = true;
@@ -479,7 +530,7 @@ void InitPlayer()
 
   player.gravity = 8;
   player.y_velocity = player.gravity;
-  player.jump_power = 20;
+  player.jump_power = 19;
 
   player.health = 3;
 
@@ -544,7 +595,7 @@ void UpdatePlayer()
       ChangePlayerAnimation(player.STAND, false);
     }
 
-    if (JustPressed(UP))
+    if (JustPressed(UP) || JustPressed(X))
     {
       player.state = player.JUMPING;
       player.y_velocity = -player.jump_power;
@@ -653,7 +704,7 @@ void UpdatePlayer()
       }
     }
   
-  if (player.state == player.JUMPING && !JustPressed(UP))
+  if (player.state == player.JUMPING && !(JustPressed(UP) || JustPressed(X)))
   {
     ChangePlayerAnimation(player.JUMP, false);
 
@@ -711,7 +762,7 @@ void UpdatePlayer()
       player.state = player.FALLING; //If we're not jumping and we aren't touching the ground then we must be falling
     }
 
-    if (JustPressed(UP) && stars > 0 && allow_double_jump && !has_double_jumped)
+    if ((JustPressed(UP) || JustPressed(X)) && stars > 0 && allow_double_jump && !has_double_jumped)
     {
       player.state = player.JUMPING;
       player.y_velocity = -player.jump_power;
@@ -825,9 +876,15 @@ void SpawnPlatform(int x, int y, int width, int height, int id)
 
       num_platforms++;
 
-      if (Rand(100) <= pickup_chance)
+      int rand_pickup = Rand(100);
+
+      if (rand_pickup <= coin_chance)
       {
         SpawnPickup((x + (width / 2)) - 18, y - 50, COIN);
+      }
+      else if (rand_pickup > coin_chance && rand_pickup <= coin_chance + star_chance)
+      {
+        SpawnPickup((x + (width / 2)) - 18, y - 50, STAR);
       }
     }
   }
@@ -1091,8 +1148,8 @@ void DrawGameOverScreen()
 	    al_draw_textf(fonts[1], al_map_rgb(255,255,255), WIDTH / 2, 275, ALLEGRO_ALIGN_LEFT, "  %i", coins);
 	    al_draw_text(fonts[1], al_map_rgb(255,255,255), WIDTH / 2, 305, ALLEGRO_ALIGN_RIGHT, "Total Score:");
 	    al_draw_textf(fonts[1], al_map_rgb(255,255,255), WIDTH / 2, 305, ALLEGRO_ALIGN_LEFT, "  %i", (highest / 2) + score);
-	    al_draw_text(fonts[1], al_map_rgb(255,0,0), WIDTH / 2, 355, ALLEGRO_ALIGN_CENTER, "Press S to submit your score");
-	    al_draw_text(fonts[1], al_map_rgb(255,0,0), WIDTH / 2, 385, ALLEGRO_ALIGN_CENTER, "Press R to have another go");
+	    //al_draw_text(fonts[1], al_map_rgb(255,0,0), WIDTH / 2, 355, ALLEGRO_ALIGN_CENTER, "Press S to submit your score");
+	    al_draw_text(fonts[1], al_map_rgb(255,0,0), WIDTH / 2, 385, ALLEGRO_ALIGN_CENTER, "Press R to have another go!");
 	  }
   }
   else
@@ -1142,8 +1199,8 @@ void NewGame()
 
   bg_offset = 0;
 
-  pickup_chance = 33;
-
+  coin_chance = 33;
+  star_chance = 5;
 
 
   InitCamera();
@@ -1178,7 +1235,7 @@ void Destroy()
   al_destroy_font(fonts[3]);
   al_destroy_font(fonts[4]);
 
-  for (i = 0; i < 10; ++i)
+  for (i = 0; i < 1; ++i)
     al_destroy_bitmap(images[i]);
 
   al_destroy_bitmap(player.sprite);
